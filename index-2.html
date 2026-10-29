@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Musikwunsch</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#14102b;--panel:#201a45;--text:#f3eefc;--muted:#a79fd0;--pink:#ff5d8f;--yellow:#ffd447;--line:#3a3270}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:"Bricolage Grotesque",system-ui,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:24px 16px}
+main{width:100%;max-width:520px}
+h1{font-size:clamp(2.4rem,11vw,3.6rem);line-height:.95;margin:.2em 0 .3em;font-weight:800;letter-spacing:-.02em}
+h1 span{display:inline-block;background:var(--pink);color:var(--bg);padding:0 .15em;transform:rotate(-2deg)}
+p{color:var(--muted);line-height:1.5;margin:0 0 1.4em}
+label{display:block;font-weight:700;margin:1em 0 .35em}
+input{width:100%;font:inherit;color:var(--text);background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:.75em .9em}
+input:focus{outline:3px solid var(--yellow);outline-offset:1px;border-color:var(--yellow)}
+button{font:inherit;font-weight:800;cursor:pointer;border:0;border-radius:10px;padding:.8em 1.2em;background:var(--yellow);color:var(--bg)}
+button:focus-visible{outline:3px solid var(--text);outline-offset:2px}
+button.main{width:100%;margin-top:1.4em;font-size:1.1rem}
+button.ghost{background:transparent;color:var(--muted);border:2px solid var(--line);padding:.4em .8em;font-weight:700}
+.msg{min-height:1.5em;margin-top:1em;font-weight:700}
+.ok{color:var(--yellow)}.err{color:var(--pink)}
+.hide{display:none}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:1em;color:var(--muted)}
+ul{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+li{background:var(--panel);border-left:6px solid var(--pink);border-radius:10px;padding:12px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+li.done{opacity:.45;border-left-color:var(--line)}
+li.done .t{text-decoration:line-through}
+.t{font-weight:800;font-size:1.1rem;overflow-wrap:anywhere}
+.s{color:var(--muted);font-size:.9rem}
+.act{display:flex;gap:6px;flex-shrink:0}
+@media (prefers-reduced-motion:no-preference){h1 span{transition:transform .3s}h1:hover span{transform:rotate(2deg)}}
+</style>
+</head>
+<body>
+<main>
+
+<section id="guest">
+  <h1>Was soll <span>laufen?</span></h1>
+  <p>Schreib deinen Musikwunsch auf. Der DJ sieht ihn sofort.</p>
+  <div>
+    <label for="song">Titel</label>
+    <input id="song" maxlength="200" autocomplete="off">
+    <label for="artist">Interpret</label>
+    <input id="artist" maxlength="200" autocomplete="off">
+    <label for="name">Dein Name (optional)</label>
+    <input id="name" maxlength="60" autocomplete="off">
+    <button class="main" id="send">Wunsch abschicken</button>
+    <div class="msg" id="gmsg" role="status"></div>
+  </div>
+</section>
+
+<section id="admin" class="hide">
+  <h1>Wunsch<span>liste</span></h1>
+  <div id="login">
+    <label for="mail">E-Mail</label>
+    <input id="mail" type="email" autocomplete="username">
+    <label for="pw">Passwort</label>
+    <input id="pw" type="password" autocomplete="current-password">
+    <button class="main" id="go">Anmelden</button>
+    <div class="msg err" id="lmsg" role="status"></div>
+  </div>
+  <div id="panel" class="hide">
+    <div class="bar"><span id="count"></span><span><button class="ghost" id="reload">Aktualisieren</button> <button class="ghost" id="out">Abmelden</button></span></div>
+    <ul id="list"></ul>
+  </div>
+</section>
+
+</main>
+<script>
+// ===== Hier eintragen (Supabase: Project Settings > API) =====
+const SUPABASE_URL = "https://DEIN-PROJEKT.supabase.co";
+const SUPABASE_KEY = "DEIN-ANON-PUBLIC-KEY";
+// =============================================================
+
+const $ = id => document.getElementById(id);
+const base = SUPABASE_URL + "/rest/v1/wishes";
+const hdr = tok => ({apikey: SUPABASE_KEY, Authorization: "Bearer " + (tok || SUPABASE_KEY), "Content-Type": "application/json"});
+let token = null, timer = null;
+
+function route(){
+  const isAdmin = location.hash === "#admin";
+  $("guest").classList.toggle("hide", isAdmin);
+  $("admin").classList.toggle("hide", !isAdmin);
+}
+addEventListener("hashchange", route); route();
+
+// ---- Gäste ----
+$("send").onclick = async () => {
+  const song = $("song").value.trim(), artist = $("artist").value.trim(), name = $("name").value.trim();
+  const m = $("gmsg");
+  if(!song){ m.className = "msg err"; m.textContent = "Bitte gib einen Titel ein."; return; }
+  $("send").disabled = true;
+  try{
+    const r = await fetch(base, {method:"POST", headers:{...hdr(), Prefer:"return=minimal"}, body: JSON.stringify({song, artist: artist || null, name: name || null})});
+    if(!r.ok) throw 0;
+    $("song").value = $("artist").value = "";
+    m.className = "msg ok"; m.textContent = "Wunsch ist angekommen. Danke!";
+  }catch(e){ m.className = "msg err"; m.textContent = "Das hat nicht geklappt. Versuch es gleich noch einmal."; }
+  $("send").disabled = false;
+};
+
+// ---- Admin ----
+$("go").onclick = async () => {
+  $("lmsg").textContent = "";
+  try{
+    const r = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", {method:"POST", headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"}, body: JSON.stringify({email:$("mail").value.trim(), password:$("pw").value})});
+    if(!r.ok) throw 0;
+    token = (await r.json()).access_token;
+    $("pw").value = "";
+    $("login").classList.add("hide"); $("panel").classList.remove("hide");
+    load(); timer = setInterval(load, 15000);
+  }catch(e){ $("lmsg").textContent = "Anmeldung fehlgeschlagen. Prüfe E-Mail und Passwort."; }
+};
+$("out").onclick = () => { token = null; clearInterval(timer); $("panel").classList.add("hide"); $("login").classList.remove("hide"); $("list").textContent = ""; };
+$("reload").onclick = () => load();
+
+async function load(){
+  const r = await fetch(base + "?select=*&order=created_at.desc", {headers: hdr(token)});
+  if(!r.ok){ $("out").onclick(); $("lmsg").textContent = "Sitzung abgelaufen. Bitte neu anmelden."; return; }
+  const rows = await r.json();
+  const open = rows.filter(x => !x.done).length;
+  $("count").textContent = open + " offen, " + rows.length + " gesamt";
+  const ul = $("list"); ul.textContent = "";
+  rows.forEach(w => {
+    const li = document.createElement("li"); if(w.done) li.className = "done";
+    const info = document.createElement("div");
+    const t = document.createElement("div"); t.className = "t"; t.textContent = w.song + (w.artist ? " – " + w.artist : "");
+    const s = document.createElement("div"); s.className = "s";
+    s.textContent = (w.name || "anonym") + ", " + new Date(w.created_at).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}) + " Uhr";
+    info.append(t, s);
+    const act = document.createElement("div"); act.className = "act";
+    const b1 = document.createElement("button"); b1.textContent = w.done ? "Wieder offen" : "Gespielt";
+    b1.onclick = async () => { await fetch(base + "?id=eq." + w.id, {method:"PATCH", headers: hdr(token), body: JSON.stringify({done: !w.done})}); load(); };
+    const b2 = document.createElement("button"); b2.className = "ghost"; b2.textContent = "Löschen";
+    b2.onclick = async () => { await fetch(base + "?id=eq." + w.id, {method:"DELETE", headers: hdr(token)}); load(); };
+    act.append(b1, b2); li.append(info, act); ul.append(li);
+  });
+}
+</script>
+</body>
+</html>
