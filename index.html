@@ -31,6 +31,8 @@ li.done{opacity:.45;border-left-color:var(--line)}
 li.done .t{text-decoration:line-through}
 .t{font-weight:800;font-size:1.1rem;overflow-wrap:anywhere}
 .s{color:var(--muted);font-size:.9rem}
+li.dup{border-left-color:var(--yellow)}
+.badge{display:inline-block;margin-left:.5em;padding:.05em .55em;border-radius:99px;background:var(--yellow);color:var(--bg);font-size:.8rem;font-weight:800;white-space:nowrap}
 .act{display:flex;gap:6px;flex-shrink:0}
 @media (prefers-reduced-motion:no-preference){h1 span{transition:transform .3s}h1:hover span{transform:rotate(2deg)}}
 </style>
@@ -124,11 +126,17 @@ async function load(){
   const rows = await r.json();
   const open = rows.filter(x => !x.done).length;
   $("count").textContent = open + " offen, " + rows.length + " gesamt";
+  const norm = s => (s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const key = w => norm(w.song) + "|" + norm(w.artist);
+  const counts = {};
+  rows.forEach(w => { counts[key(w)] = (counts[key(w)] || 0) + 1; });
   const ul = $("list"); ul.textContent = "";
   rows.forEach(w => {
-    const li = document.createElement("li"); if(w.done) li.className = "done";
+    const n = counts[key(w)];
+    const li = document.createElement("li"); li.className = (w.done ? "done " : "") + (n > 1 ? "dup" : "");
     const info = document.createElement("div");
     const t = document.createElement("div"); t.className = "t"; t.textContent = w.song + (w.artist ? " – " + w.artist : "");
+    if(n > 1){ const b = document.createElement("span"); b.className = "badge"; b.textContent = n + "× gewünscht"; t.append(b); }
     const s = document.createElement("div"); s.className = "s";
     s.textContent = (w.name || "anonym") + ", " + new Date(w.created_at).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}) + " Uhr";
     info.append(t, s);
