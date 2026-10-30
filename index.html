@@ -47,7 +47,7 @@ footer a{color:var(--muted)}
   <div>
     <label for="song">Titel</label>
     <input id="song" maxlength="200" autocomplete="off">
-    <label for="artist">Interpret/Künstler</label>
+    <label for="artist">Interpret</label>
     <input id="artist" maxlength="200" autocomplete="off">
     <label for="name">Dein Name (optional)</label>
     <input id="name" maxlength="60" autocomplete="off">
@@ -67,7 +67,7 @@ footer a{color:var(--muted)}
     <div class="msg err" id="lmsg" role="status"></div>
   </div>
   <div id="panel" class="hide">
-    <div class="bar"><span id="count"></span><span><button class="ghost" id="reload">Aktualisieren</button> <button class="ghost" id="out">Abmelden</button></span></div>
+    <div class="bar"><span id="count"></span><span><button class="ghost" id="reload">Aktualisieren</button> <button class="ghost" id="csv">Excel-Export</button> <button class="ghost" id="out">Abmelden</button></span></div>
     <ul id="list"></ul>
   </div>
 </section>
@@ -83,7 +83,7 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const $ = id => document.getElementById(id);
 const base = SUPABASE_URL + "/rest/v1/wishes";
 const hdr = tok => ({apikey: SUPABASE_KEY, Authorization: "Bearer " + (tok || SUPABASE_KEY), "Content-Type": "application/json"});
-let token = null, timer = null;
+let token = null, timer = null, lastRows = [];
 
 function route(){
   const isAdmin = location.hash === "#admin";
@@ -122,31 +122,44 @@ $("go").onclick = async () => {
 $("out").onclick = () => { token = null; clearInterval(timer); $("panel").classList.add("hide"); $("login").classList.remove("hide"); $("list").textContent = ""; };
 $("reload").onclick = () => load();
 
+$("csv").onclick = () => {
+  const safe = v => { v = v == null ? "" : String(v); if(/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
+  const head = ["Zeit","Titel","Interpret","Name","Gespielt"];
+  const lines = lastRows.map(w => [new Date(w.created_at).toLocaleString("de-DE"), w.song, w.artist, w.name, w.done ? "ja" : "nein"].map(safe).join(";"));
+  const blob = new Blob(["\ufeff" + [head.join(";"), ...lines].join("\r\n")], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "musikwuensche.csv";
+  document.body.append(a); a.click(); a.remove();
+};
+
 async function load(){
   const r = await fetch(base + "?select=*&order=created_at.desc", {headers: hdr(token)});
   if(!r.ok){ $("out").onclick(); $("lmsg").textContent = "Sitzung abgelaufen. Bitte neu anmelden."; return; }
   const rows = await r.json();
-  const open = rows.filter(x => !x.done).length;
-  $("count").textContent = open + " offen, " + rows.length + " gesamt";
+  lastRows = rows;
   const norm = s => (s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   const key = w => norm(w.song) + "|" + norm(w.artist);
-  const counts = {};
-  rows.forEach(w => { counts[key(w)] = (counts[key(w)] || 0) + 1; });
+  const groups = new Map();
+  rows.forEach(w => { const k = key(w); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(w); });
+  const list = [...groups.values()];
+  const open = list.filter(g => g.some(x => !x.done)).length;
+  $("count").textContent = open + " Lieder offen, " + list.length + " Lieder, " + rows.length + " Wünsche";
   const ul = $("list"); ul.textContent = "";
-  rows.forEach(w => {
-    const n = counts[key(w)];
-    const li = document.createElement("li"); li.className = (w.done ? "done " : "") + (n > 1 ? "dup" : "");
+  list.forEach(g => {
+    const w = g[0], n = g.length, done = g.every(x => x.done);
+    const ids = "(" + g.map(x => x.id).join(",") + ")";
+    const li = document.createElement("li"); li.className = (done ? "done " : "") + (n > 1 ? "dup" : "");
     const info = document.createElement("div");
     const t = document.createElement("div"); t.className = "t"; t.textContent = w.song + (w.artist ? " – " + w.artist : "");
     if(n > 1){ const b = document.createElement("span"); b.className = "badge"; b.textContent = n + "× gewünscht"; t.append(b); }
+    const names = [...new Set(g.map(x => x.name).filter(Boolean))];
     const s = document.createElement("div"); s.className = "s";
-    s.textContent = (w.name || "anonym") + ", " + new Date(w.created_at).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}) + " Uhr";
+    s.textContent = (names.length ? names.join(", ") : "anonym") + ", zuletzt " + new Date(w.created_at).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}) + " Uhr";
     info.append(t, s);
     const act = document.createElement("div"); act.className = "act";
-    const b1 = document.createElement("button"); b1.textContent = w.done ? "Wieder offen" : "Gespielt";
-    b1.onclick = async () => { await fetch(base + "?id=eq." + w.id, {method:"PATCH", headers: hdr(token), body: JSON.stringify({done: !w.done})}); load(); };
+    const b1 = document.createElement("button"); b1.textContent = done ? "Wieder offen" : "Gespielt";
+    b1.onclick = async () => { await fetch(base + "?id=in." + ids, {method:"PATCH", headers: hdr(token), body: JSON.stringify({done: !done})}); load(); };
     const b2 = document.createElement("button"); b2.className = "ghost"; b2.textContent = "Löschen";
-    b2.onclick = async () => { await fetch(base + "?id=eq." + w.id, {method:"DELETE", headers: hdr(token)}); load(); };
+    b2.onclick = async () => { await fetch(base + "?id=in." + ids, {method:"DELETE", headers: hdr(token)}); load(); };
     act.append(b1, b2); li.append(info, act); ul.append(li);
   });
 }
