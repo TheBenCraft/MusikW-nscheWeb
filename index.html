@@ -67,7 +67,7 @@ footer a{color:var(--muted)}
     <div class="msg err" id="lmsg" role="status"></div>
   </div>
   <div id="panel" class="hide">
-    <div class="bar"><span id="count"></span><span><button class="ghost" id="reload">Aktualisieren</button> <button class="ghost" id="csv">Excel-Export</button> <button class="ghost" id="out">Abmelden</button></span></div>
+    <div class="bar"><span id="count"></span><span><button class="ghost" id="reload">Aktualisieren</button> <button class="ghost" id="csv">Excel-Export</button> <button class="ghost" id="hide" aria-pressed="false">Gespielte ausblenden</button> <button class="ghost" id="out">Abmelden</button></span></div>
     <ul id="list"></ul>
   </div>
 </section>
@@ -83,7 +83,7 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const $ = id => document.getElementById(id);
 const base = SUPABASE_URL + "/rest/v1/wishes";
 const hdr = tok => ({apikey: SUPABASE_KEY, Authorization: "Bearer " + (tok || SUPABASE_KEY), "Content-Type": "application/json"});
-let token = null, timer = null, lastRows = [];
+let token = null, timer = null, lastRows = [], hideDone = false;
 
 function route(){
   const isAdmin = location.hash === "#admin";
@@ -121,6 +121,12 @@ $("go").onclick = async () => {
 };
 $("out").onclick = () => { token = null; clearInterval(timer); $("panel").classList.add("hide"); $("login").classList.remove("hide"); $("list").textContent = ""; };
 $("reload").onclick = () => load();
+$("hide").onclick = () => {
+  hideDone = !hideDone;
+  $("hide").textContent = hideDone ? "Gespielte einblenden" : "Gespielte ausblenden";
+  $("hide").setAttribute("aria-pressed", hideDone);
+  load();
+};
 
 $("csv").onclick = () => {
   const safe = v => { v = v == null ? "" : String(v); if(/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
@@ -144,7 +150,9 @@ async function load(){
   const open = list.filter(g => g.some(x => !x.done)).length;
   $("count").textContent = open + " Lieder offen, " + list.length + " Lieder, " + rows.length + " Wünsche";
   const ul = $("list"); ul.textContent = "";
-  list.forEach(g => {
+  const shown = hideDone ? list.filter(g => g.some(x => !x.done)) : list;
+  if(!shown.length){ const e = document.createElement("li"); e.textContent = "Keine offenen Wünsche."; ul.append(e); }
+  shown.forEach(g => {
     const w = g[0], n = g.length, done = g.every(x => x.done);
     const ids = "(" + g.map(x => x.id).join(",") + ")";
     const li = document.createElement("li"); li.className = (done ? "done " : "") + (n > 1 ? "dup" : "");
