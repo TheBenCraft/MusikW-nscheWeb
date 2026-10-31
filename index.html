@@ -211,8 +211,8 @@ $("hide").onclick = () => {
 
 $("csv").onclick = () => {
   const safe = v => { v = v == null ? "" : String(v); if(/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
-  const head = ["Zeit","Titel","Interpret","Name","Gespielt"];
-  const lines = lastRows.map(w => [new Date(w.created_at).toLocaleString("de-DE"), w.song, w.artist, w.name, w.done ? "ja" : "nein"].map(safe).join(";"));
+  const head = ["Zeit","Titel","Interpret","Gespielt"];
+  const lines = lastRows.map(w => [new Date(w.created_at).toLocaleString("de-DE"), w.song, w.artist, w.done ? "ja" : "nein"].map(safe).join(";"));
   const blob = new Blob(["\ufeff" + [head.join(";"), ...lines].join("\r\n")], {type:"text/csv;charset=utf-8"});
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "musikwuensche.csv";
   document.body.append(a); a.click(); a.remove();
