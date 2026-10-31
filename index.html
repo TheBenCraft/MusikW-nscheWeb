@@ -285,7 +285,7 @@ footer a{color:var(--muted)}
 
   <section class="setsec">
     <h3>Wünsche und Gäste</h3>
-    <div class="setrow"><div><b>Wünsche annehmen</b><span class="d">Wenn aus, können Gäste weder Wünsche noch Emojis schicken.</span></div><button class="switch" role="switch" id="open" aria-checked="true" aria-label="Wünsche annehmen"></button></div>
+    <div class="setrow"><div><b>Wünsche annehmen</b><span class="d">Wenn aus, können Gäste keine Wünsche mehr schicken. Emojis bleiben möglich, solange sie eingeschaltet sind.</span></div><button class="switch" role="switch" id="open" aria-checked="true" aria-label="Wünsche annehmen"></button></div>
     <div class="setrow"><div><b>Spam-Schutz</b><span class="d">Wartezeit pro Gerät und Limit gegen Überflutung.</span></div><button class="switch" role="switch" id="spam" aria-checked="true" aria-label="Spam-Schutz"></button></div>
     <div class="setrow"><div><b>Emojis für Gäste</b><span class="d">Gäste können Emojis auf den Beamer schicken.</span></div><button class="switch" role="switch" id="gem" aria-checked="true" aria-label="Emojis für Gäste"></button></div>
     <div class="setrow"><div><b>Erlaubte Emojis</b><span class="d">Welche Emojis Gäste und du nutzen können.</span></div><button class="ghost" id="emoBtn">Festlegen …</button></div>
@@ -372,7 +372,6 @@ const store = {
 };
 function closedUI(){
   ["song","artist","name","send"].forEach(id => $(id).disabled = true);
-  document.querySelectorAll("#gEmojis button").forEach(b => b.disabled = true);
   $("gmsg").className = "msg err"; $("gmsg").textContent = "Wünsche sind gerade pausiert.";
 }
 async function checkOpen(){
@@ -387,7 +386,7 @@ async function checkOpen(){
 const EMOJI_COOLDOWN = 10;
 async function guestEmoji(em){
   const m = $("emsg");
-  if(!(await checkOpen())) return;
+  await checkOpen(); // Emojis gehen auch bei pausierten Wünschen; holt nur den Stand des Spam-Schutzes
   const wait = Math.ceil(EMOJI_COOLDOWN - (Date.now() - Number(store.get("lastEmoji") || 0)) / 1000);
   if(spamOn && wait > 0){ m.className = "msg err"; m.textContent = "Bitte warte noch " + wait + " Sekunden."; return; }
   try{
