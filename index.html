@@ -101,6 +101,12 @@ body.sm{display:block;padding:0;cursor:none;overflow:hidden}
 #screen.onlyqr{grid-template-columns:1fr;place-items:center}
 #screen.onlyqr .sc-qr img{max-width:min(62vh,62vw)}
 #screen.onlyqr .sc-cta{font-size:clamp(2rem,5vw,5rem)}
+.sc-qr.hide{display:none}
+/* Meldung groß und mittig */
+#screen.msgfull{grid-template-columns:1fr;place-items:center;text-align:center}
+#screen.msgfull #scLeft{width:100%}
+#screen.msgfull #scNowBlock,#screen.msgfull #scNextL,#screen.msgfull #scNext,#screen.msgfull #scAside{display:none}
+#screen.msgfull .sc-msg{font-size:clamp(2.5rem,9vw,11rem);margin:0;padding:.4em .8em}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .chips .em{font-size:1.4rem;min-width:48px}
 .sc-msg{display:inline-block;background:var(--yellow);color:var(--bg);font-weight:800;font-size:clamp(1.6rem,4.5vw,5rem);line-height:1.1;padding:.25em .6em;border-radius:.4em;margin-bottom:4vh;overflow-wrap:anywhere}
@@ -124,6 +130,20 @@ footer a{color:var(--muted)}
 .menu button[aria-checked=true]::before{content:"✓ "}
 .chips button[aria-pressed=true]{background:var(--yellow);color:var(--bg);border-color:var(--yellow)}
 #emo{width:min(94vw,460px);max-height:88vh;overflow:auto}
+#set{width:min(94vw,640px);max-height:90vh;overflow:auto}
+.sethead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sethead h2{margin:0}
+.setsec{border-top:2px solid var(--line);margin-top:14px;padding-bottom:6px}
+.setsec h3{margin:.9em 0 .3em;font-size:1.05rem}
+.setsec .s{margin:.6em 0 .2em}
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 0}
+.setrow b{display:block}
+.setrow .d{display:block;color:var(--muted);font-size:.88rem;margin-top:2px}
+.switch{flex-shrink:0;width:54px;height:30px;padding:0;border-radius:99px;background:var(--line);position:relative}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--text);transition:transform .15s}
+.switch[aria-checked=true]{background:var(--yellow)}
+.switch[aria-checked=true]::after{transform:translateX(24px);background:var(--bg)}
+.setsec.danger h3{color:var(--pink)}
 #emo .two{grid-template-columns:1fr auto;align-items:center}
 /* ---- Desktop-Layout ---- */
 @media (min-width:1024px){
@@ -190,16 +210,10 @@ footer a{color:var(--muted)}
       <div class="menuwrap">
         <button class="ghost" id="menuBtn" aria-haspopup="true" aria-expanded="false">Menü ☰</button>
         <div class="menu hide" id="menu" role="menu">
-          <button role="menuitem" id="open">Wünsche pausieren</button>
-          <button role="menuitem" id="spam">Spam-Schutz ausschalten</button>
-          <button role="menuitem" id="gem">Gäste-Emojis ausschalten</button>
-          <button role="menuitem" id="emoBtn">Erlaubte Emojis festlegen …</button>
-          <button role="menuitem" id="snd">Ton: an</button>
-          <button role="menuitem" id="hide" aria-pressed="false">Gespielte ausblenden</button>
+          <button role="menuitem" id="setBtn">Einstellungen ⚙</button>
           <button role="menuitem" id="statsBtn">Statistik</button>
           <button role="menuitem" id="csv">Excel-Export</button>
           <button role="menuitem" id="reload">Aktualisieren</button>
-          <button role="menuitem" id="wipeBtn" class="danger">Alle Wünsche löschen …</button>
           <button role="menuitem" id="out">Abmelden</button>
         </div>
       </div>
@@ -215,15 +229,8 @@ footer a{color:var(--muted)}
       <ul id="bNow"></ul>
       <h3 class="sub">Als Nächstes</h3>
       <ul id="bNext"></ul>
-      <h3 class="sub">Beamer-Anzeige</h3>
-      <div class="chips" id="scPresets"></div>
-      <div class="s">Das soll auf dem Beamer zu sehen sein</div>
-      <div class="chips" id="scModules"></div>
-      <div class="s">Größe des QR-Codes</div>
-      <div class="chips" id="scQrSize"></div>
-      <div class="s">Anzahl der nächsten Titel</div>
-      <div class="chips" id="scNextCount"></div>
       <h3 class="sub">Meldung auf dem Beamer</h3>
+      <div class="chips" id="msgBigRow"></div>
       <div class="chips" id="mPresets"></div>
       <input id="msgText" maxlength="120" placeholder="Eigener Text" aria-label="Meldung für den Beamer">
       <div class="chips"><button id="msgShow">Anzeigen</button><button class="ghost" id="msgClear">Meldung entfernen</button></div>
@@ -273,6 +280,40 @@ footer a{color:var(--muted)}
   <div id="statsBody"></div>
   <div class="wbtns"><button class="ghost" id="sclose">Schließen</button><button id="sexp">Als Excel-Datei speichern</button></div>
 </dialog>
+<dialog id="set" aria-labelledby="sett">
+  <div class="sethead"><h2 id="sett">Einstellungen</h2><button id="setClose">Fertig</button></div>
+
+  <section class="setsec">
+    <h3>Wünsche und Gäste</h3>
+    <div class="setrow"><div><b>Wünsche annehmen</b><span class="d">Wenn aus, können Gäste weder Wünsche noch Emojis schicken.</span></div><button class="switch" role="switch" id="open" aria-checked="true" aria-label="Wünsche annehmen"></button></div>
+    <div class="setrow"><div><b>Spam-Schutz</b><span class="d">Wartezeit pro Gerät und Limit gegen Überflutung.</span></div><button class="switch" role="switch" id="spam" aria-checked="true" aria-label="Spam-Schutz"></button></div>
+    <div class="setrow"><div><b>Emojis für Gäste</b><span class="d">Gäste können Emojis auf den Beamer schicken.</span></div><button class="switch" role="switch" id="gem" aria-checked="true" aria-label="Emojis für Gäste"></button></div>
+    <div class="setrow"><div><b>Erlaubte Emojis</b><span class="d">Welche Emojis Gäste und du nutzen können.</span></div><button class="ghost" id="emoBtn">Festlegen …</button></div>
+  </section>
+
+  <section class="setsec">
+    <h3>Beamer-Anzeige</h3>
+    <div class="s">Voreinstellungen</div>
+    <div class="chips" id="scPresets"></div>
+    <div class="s">Das soll auf dem Beamer zu sehen sein</div>
+    <div class="chips" id="scModules"></div>
+    <div class="s">Größe des QR-Codes</div>
+    <div class="chips" id="scQrSize"></div>
+    <div class="s">Anzahl der nächsten Titel</div>
+    <div class="chips" id="scNextCount"></div>
+  </section>
+
+  <section class="setsec">
+    <h3>Diese Admin-Seite</h3>
+    <div class="setrow"><div><b>Ton bei neuen Wünschen</b><span class="d">Kurzer Signalton, wenn ein Wunsch ankommt.</span></div><button class="switch" role="switch" id="snd" aria-checked="true" aria-label="Ton bei neuen Wünschen"></button></div>
+    <div class="setrow"><div><b>Gespielte Wünsche ausblenden</b><span class="d">Blendet erledigte Wünsche in der Liste aus.</span></div><button class="switch" role="switch" id="hide" aria-checked="false" aria-label="Gespielte Wünsche ausblenden"></button></div>
+  </section>
+
+  <section class="setsec danger">
+    <h3>Gefahrenbereich</h3>
+    <div class="setrow"><div><b>Alle Wünsche löschen</b><span class="d">Entfernt alle Wünsche endgültig, nach Passwortabfrage.</span></div><button class="solid" id="wipeBtn">Löschen …</button></div>
+  </section>
+</dialog>
 <dialog id="emo" aria-labelledby="et">
   <h2 id="et">Erlaubte Emojis</h2>
   <p>Tippe auf ein Emoji, um es zu erlauben oder zu sperren. Die Auswahl gilt für die Gäste und für deine Emoji-Tasten im Beamer-Bereich.</p>
@@ -302,7 +343,7 @@ function applySettings(j){ // true, wenn sich die Emoji-Einstellungen geändert 
   const changed = ng !== guestEmojis || nl.join(" ") !== emojiList.join(" ");
   guestEmojis = ng; emojiList = nl; return changed;
 }
-const DEFAULT_SCREEN = {now: true, next: true, qr: true, msg: true, pause: true, qrSize: "m", nextCount: 5};
+const DEFAULT_SCREEN = {now: true, next: true, qr: true, msg: true, pause: true, msgBig: false, qrSize: "m", nextCount: 5};
 function cfgFrom(o){
   const c = Object.assign({}, DEFAULT_SCREEN, o && typeof o === "object" ? o : {});
   c.nextCount = [3, 5, 8].includes(Number(c.nextCount)) ? Number(c.nextCount) : 5;
@@ -408,8 +449,7 @@ $("out").onclick = () => { token = null; clearInterval(timer); knownIds = null; 
 $("reload").onclick = () => load();
 $("hide").onclick = () => {
   hideDone = !hideDone;
-  $("hide").textContent = hideDone ? "Gespielte einblenden" : "Gespielte ausblenden";
-  $("hide").setAttribute("aria-pressed", hideDone);
+  $("hide").setAttribute("aria-checked", hideDone);
   load();
 };
 
@@ -440,15 +480,12 @@ function beep(){
     });
   }catch(e){}
 }
-$("snd").onclick = () => { soundOn = !soundOn; $("snd").textContent = "Ton: " + (soundOn ? "an" : "aus"); if(soundOn) beep(); };
+$("snd").onclick = () => { soundOn = !soundOn; $("snd").setAttribute("aria-checked", soundOn); if(soundOn) beep(); };
 
 function updateOpenBtn(){
-  $("open").textContent = isOpen ? "Wünsche pausieren" : "Wünsche wieder annehmen";
-  $("open").classList.toggle("paused", !isOpen);
-  $("spam").textContent = spamOn ? "Spam-Schutz ausschalten" : "Spam-Schutz einschalten";
-  $("spam").classList.toggle("paused", !spamOn);
-  $("gem").textContent = guestEmojis ? "Gäste-Emojis ausschalten" : "Gäste-Emojis einschalten";
-  $("gem").classList.toggle("paused", !guestEmojis);
+  $("open").setAttribute("aria-checked", isOpen);
+  $("spam").setAttribute("aria-checked", spamOn);
+  $("gem").setAttribute("aria-checked", guestEmojis);
   const st = $("status"); st.textContent = "";
   const chip = (t, y) => { const c = document.createElement("span"); c.className = "chip" + (y ? " y" : ""); c.textContent = t; st.append(c); };
   if(!isOpen) chip("Wünsche pausiert");
@@ -473,7 +510,7 @@ $("wgo").onclick = async () => {
     const d = await fetch(base + "?id=gte.0", {method:"DELETE", headers: hdr(token)});
     if(!d.ok) throw 0;
     await fetch(SUPABASE_URL + "/rest/v1/screen_items?id=gte.0", {method:"DELETE", headers: hdr(token)});
-    $("wipe").close(); load();
+    $("wipe").close(); $("set").close(); load();
   }catch(e){ $("wmsg").textContent = "Das hat nicht geklappt. Versuch es noch einmal."; }
   finally{ $("wgo").disabled = false; $("wpw").value = ""; }
 };
@@ -639,6 +676,7 @@ function paintScreenControls(){
   fill("scPresets", SCREEN_PRESETS.map(([l, v]) => cfgBtn(l, null, () => saveCfg({...c, ...v}))));
   fill("scModules", SCREEN_MODULES.map(([k, l]) => cfgBtn(l, !!c[k], () => saveCfg({...c, [k]: !c[k]}))));
   fill("scQrSize", [["s", "Klein"], ["m", "Mittel"], ["l", "Groß"]].map(([k, l]) => cfgBtn(l, c.qrSize === k, () => saveCfg({...c, qrSize: k}))));
+  fill("msgBigRow", [cfgBtn("Groß in der Mitte anzeigen", !!c.msgBig, () => saveCfg({...c, msgBig: !c.msgBig}))]);
   fill("scNextCount", [3, 5, 8].map(n => cfgBtn(n + " Titel", c.nextCount === n, () => saveCfg({...c, nextCount: n}))));
 }
 
@@ -699,6 +737,7 @@ function paintScreen(){
   const sc = $("screen");
   sc.classList.toggle("noqr", !c.qr);
   sc.classList.toggle("onlyqr", c.qr && !leftHas);
+  sc.classList.toggle("msgfull", c.msgBig && !!msg);
   ["s", "m", "l"].forEach(z => sc.classList.toggle("qs-" + z, c.qrSize === z));
   $("scLeft").classList.toggle("hide", !leftHas);
   $("scAside").classList.toggle("hide", !c.qr);
@@ -761,6 +800,8 @@ function wireMenu(btn, menu){
   menu.addEventListener("click", e => { if(e.target.closest("button")) closeMenus(); });
 }
 wireMenu($("menuBtn"), $("menu")); wireMenu($("viewBtn"), $("viewMenu"));
+$("setBtn").onclick = () => { paintScreenControls(); $("set").showModal(); };
+$("setClose").onclick = () => $("set").close();
 document.addEventListener("click", e => { if(!e.target.closest(".menuwrap")) closeMenus(); });
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeMenus(); });
 $("open").onclick = async () => {
