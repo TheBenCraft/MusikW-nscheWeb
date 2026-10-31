@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23ff5d8f'/%3E%3Cellipse cx='38' cy='70' rx='15' ry='11' fill='%2314102b'/%3E%3Crect x='48' y='24' width='7' height='46' fill='%2314102b'/%3E%3Cpath d='M55 24q22 4 22 24-8-12-22-12z' fill='%2314102b'/%3E%3C/svg%3E">
 <title>Musikwunsch</title>
 <style>
 :root{--bg:#14102b;--panel:#201a45;--text:#f3eefc;--muted:#a79fd0;--pink:#ff5d8f;--yellow:#ffd447;--line:#3a3270}
@@ -33,9 +34,17 @@ li.done .t{text-decoration:line-through}
 li.dup{border-left-color:var(--yellow)}
 .badge{display:inline-block;margin-left:.5em;padding:.05em .55em;border-radius:99px;background:var(--yellow);color:var(--bg);font-size:.8rem;font-weight:800;white-space:nowrap}
 .act{display:flex;gap:6px;flex-shrink:0}
+.bar{flex-wrap:wrap}
+.bar span:last-child{display:flex;gap:6px;flex-wrap:wrap}
+li{flex-wrap:wrap}
+li > div:first-child{flex:1 1 200px}
+#panel button{min-height:44px;padding:.6em 1em}
+#panel .t{font-size:1.25rem}
+button.paused{background:var(--pink);color:var(--bg);border-color:var(--pink)}
 footer{margin-top:2.5em;font-size:.85rem;color:var(--muted)}
 footer a{color:var(--muted)}
-@media (prefers-reduced-motion:no-preference){h1 span{transition:transform .3s}h1:hover span{transform:rotate(2deg)}}
+@keyframes flash{0%,60%{box-shadow:0 0 0 4px var(--yellow)}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:no-preference){li.new{animation:flash 3s ease-out}h1 span{transition:transform .3s}h1:hover span{transform:rotate(2deg)}}
 </style>
 </head>
 <body>
@@ -67,7 +76,7 @@ footer a{color:var(--muted)}
     <div class="msg err" id="lmsg" role="status"></div>
   </div>
   <div id="panel" class="hide">
-    <div class="bar"><span id="count"></span><span><button class="ghost" id="reload">Aktualisieren</button> <button class="ghost" id="csv">Excel-Export</button> <button class="ghost" id="hide" aria-pressed="false">Gespielte ausblenden</button> <button class="ghost" id="out">Abmelden</button></span></div>
+    <div class="bar"><span id="count"></span><span><button class="ghost" id="open">Wünsche pausieren</button> <button class="ghost" id="snd">Ton: an</button> <button class="ghost" id="reload">Aktualisieren</button> <button class="ghost" id="csv">Excel-Export</button> <button class="ghost" id="hide" aria-pressed="false">Gespielte ausblenden</button> <button class="ghost" id="out">Abmelden</button></span></div>
     <ul id="list"></ul>
   </div>
 </section>
@@ -84,6 +93,7 @@ const $ = id => document.getElementById(id);
 const base = SUPABASE_URL + "/rest/v1/wishes";
 const hdr = tok => ({apikey: SUPABASE_KEY, Authorization: "Bearer " + (tok || SUPABASE_KEY), "Content-Type": "application/json"});
 let token = null, timer = null, lastRows = [], hideDone = false;
+let knownIds = null, soundOn = true, audioCtx = null, wakeLock = null, isOpen = true;
 
 function route(){
   const isAdmin = location.hash === "#admin";
@@ -93,14 +103,35 @@ function route(){
 addEventListener("hashchange", route); route();
 
 // ---- Gäste ----
+const COOLDOWN = 120; // Sekunden zwischen zwei Wünschen pro Gerät
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+};
+function closedUI(){
+  ["song","artist","name","send"].forEach(id => $(id).disabled = true);
+  $("gmsg").className = "msg err"; $("gmsg").textContent = "Wünsche sind gerade pausiert.";
+}
+async function checkOpen(){
+  try{
+    const r = await fetch(SUPABASE_URL + "/rest/v1/settings?select=open&id=eq.1", {headers: hdr()});
+    const j = await r.json();
+    if(j[0] && j[0].open === false){ closedUI(); return false; }
+  }catch(e){}
+  return true;
+}
+checkOpen();
 $("send").onclick = async () => {
   const song = $("song").value.trim(), artist = $("artist").value.trim(), name = $("name").value.trim();
   const m = $("gmsg");
   if(!song){ m.className = "msg err"; m.textContent = "Bitte gib einen Titel ein."; return; }
+  const wait = Math.ceil(COOLDOWN - (Date.now() - Number(store.get("lastWish") || 0)) / 1000);
+  if(wait > 0){ m.className = "msg err"; m.textContent = "Bitte warte noch " + wait + " Sekunden, bevor du den nächsten Wunsch abschickst."; return; }
   $("send").disabled = true;
   try{
     const r = await fetch(base, {method:"POST", headers:{...hdr(), Prefer:"return=minimal"}, body: JSON.stringify({song, artist: artist || null, name: name || null})});
-    if(!r.ok) throw 0;
+    if(!r.ok){ if(!(await checkOpen())) return; throw 0; }
+    store.set("lastWish", Date.now());
     $("song").value = $("artist").value = "";
     m.className = "msg ok"; m.textContent = "Wunsch ist angekommen. Danke!";
   }catch(e){ m.className = "msg err"; m.textContent = "Das hat nicht geklappt. Versuch es gleich noch einmal."; }
@@ -116,10 +147,11 @@ $("go").onclick = async () => {
     token = (await r.json()).access_token;
     $("pw").value = "";
     $("login").classList.add("hide"); $("panel").classList.remove("hide");
-    load(); timer = setInterval(load, 15000);
+    try{ audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+    requestWake(); load(); timer = setInterval(load, 8000);
   }catch(e){ $("lmsg").textContent = "Anmeldung fehlgeschlagen. Prüfe E-Mail und Passwort."; }
 };
-$("out").onclick = () => { token = null; clearInterval(timer); $("panel").classList.add("hide"); $("login").classList.remove("hide"); $("list").textContent = ""; };
+$("out").onclick = () => { token = null; clearInterval(timer); knownIds = null; try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; $("panel").classList.add("hide"); $("login").classList.remove("hide"); $("list").textContent = ""; };
 $("reload").onclick = () => load();
 $("hide").onclick = () => {
   hideDone = !hideDone;
@@ -137,11 +169,52 @@ $("csv").onclick = () => {
   document.body.append(a); a.click(); a.remove();
 };
 
+function beep(){
+  if(!soundOn || !audioCtx) return;
+  try{
+    if(audioCtx.state === "suspended") audioCtx.resume();
+    [880, 1175].forEach((f, i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination);
+      const t = audioCtx.currentTime + i * .18;
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(.25, t + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, t + .16);
+      o.start(t); o.stop(t + .17);
+    });
+  }catch(e){}
+}
+$("snd").onclick = () => { soundOn = !soundOn; $("snd").textContent = "Ton: " + (soundOn ? "an" : "aus"); if(soundOn) beep(); };
+
+function updateOpenBtn(){
+  $("open").textContent = isOpen ? "Wünsche pausieren" : "Wünsche wieder annehmen";
+  $("open").classList.toggle("paused", !isOpen);
+}
+$("open").onclick = async () => {
+  await fetch(SUPABASE_URL + "/rest/v1/settings?id=eq.1", {method:"PATCH", headers: hdr(token), body: JSON.stringify({open: !isOpen})});
+  load();
+};
+
+async function requestWake(){
+  try{
+    if(token && "wakeLock" in navigator && !(wakeLock && !wakeLock.released)) wakeLock = await navigator.wakeLock.request("screen");
+  }catch(e){}
+}
+document.addEventListener("visibilitychange", () => { if(!document.hidden){ document.title = "Musikwunsch"; requestWake(); } });
+
 async function load(){
   const r = await fetch(base + "?select=*&order=created_at.desc", {headers: hdr(token)});
   if(!r.ok){ $("out").onclick(); $("lmsg").textContent = "Sitzung abgelaufen. Bitte neu anmelden."; return; }
   const rows = await r.json();
   lastRows = rows;
+  try{
+    const sr = await fetch(SUPABASE_URL + "/rest/v1/settings?select=open&id=eq.1", {headers: hdr(token)});
+    if(sr.ok){ const sj = await sr.json(); if(sj[0]) isOpen = sj[0].open; }
+  }catch(e){}
+  updateOpenBtn();
+  const newIds = knownIds ? rows.filter(x => !knownIds.has(x.id)).map(x => x.id) : [];
+  knownIds = new Set(rows.map(x => x.id));
+  if(newIds.length){ beep(); if(document.hidden) document.title = "● Neuer Wunsch"; }
   const norm = s => (s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   const key = w => norm(w.song) + "|" + norm(w.artist);
   const groups = new Map();
@@ -155,7 +228,7 @@ async function load(){
   shown.forEach(g => {
     const w = g[0], n = g.length, done = g.every(x => x.done);
     const ids = "(" + g.map(x => x.id).join(",") + ")";
-    const li = document.createElement("li"); li.className = (done ? "done " : "") + (n > 1 ? "dup" : "");
+    const li = document.createElement("li"); li.className = (done ? "done " : "") + (n > 1 ? "dup" : "") + (g.some(x => newIds.includes(x.id)) ? " new" : "");
     const info = document.createElement("div");
     const t = document.createElement("div"); t.className = "t"; t.textContent = w.song + (w.artist ? " – " + w.artist : "");
     if(n > 1){ const b = document.createElement("span"); b.className = "badge"; b.textContent = n + "× gewünscht"; t.append(b); }
