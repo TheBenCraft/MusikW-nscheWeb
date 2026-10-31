@@ -94,6 +94,14 @@ body.sm{display:block;padding:0;cursor:none;overflow:hidden}
 .sc-cta{font-size:clamp(1.4rem,3vw,3rem);font-weight:800}
 .sc-pause{background:var(--pink);color:var(--bg);padding:.4em .8em;border-radius:12px;font-weight:800;font-size:clamp(1rem,2vw,2rem)}
 @media (max-width:800px){#screen{grid-template-columns:1fr}.sc-qr img{max-width:60vw}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chips .em{font-size:1.4rem;min-width:48px}
+.sc-msg{display:inline-block;background:var(--yellow);color:var(--bg);font-weight:800;font-size:clamp(1.6rem,4.5vw,5rem);line-height:1.1;padding:.25em .6em;border-radius:.4em;margin-bottom:4vh;overflow-wrap:anywhere}
+.sc-msg.hide{display:none}
+.emo{position:fixed;bottom:-10vh;font-size:clamp(2rem,6vw,6rem);pointer-events:none;z-index:60;animation:rise var(--d,4s) ease-in forwards}
+@keyframes rise{0%{transform:translateY(0) rotate(0);opacity:0}10%{opacity:1}100%{transform:translateY(-120vh) rotate(var(--r,20deg));opacity:0}}
+@keyframes fadeemo{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.emo{animation:fadeemo 3s ease-out forwards}}
 footer{margin-top:2.5em;font-size:.85rem;color:var(--muted)}
 footer a{color:var(--muted)}
 @keyframes flash{0%,60%{box-shadow:0 0 0 4px var(--yellow)}100%{box-shadow:0 0 0 0 transparent}}
@@ -159,6 +167,14 @@ footer a{color:var(--muted)}
       <ul id="bNow"></ul>
       <h3 class="sub">Als Nächstes</h3>
       <ul id="bNext"></ul>
+      <h3 class="sub">Meldung auf dem Beamer</h3>
+      <div class="chips" id="mPresets"></div>
+      <input id="msgText" maxlength="120" placeholder="Eigener Text" aria-label="Meldung für den Beamer">
+      <div class="chips" id="msgEmojis"></div>
+      <div class="chips"><button id="msgShow">Anzeigen</button><button class="ghost" id="msgClear">Meldung entfernen</button></div>
+      <div class="s" id="msgNow"></div>
+      <h3 class="sub">Emoji auf dem Beamer</h3>
+      <div class="chips" id="burstRow"></div>
       <h3 class="sub">Eigenen Titel hinzufügen</h3>
       <div class="two"><input id="mSong" maxlength="200" placeholder="Titel" aria-label="Titel"><input id="mArtist" maxlength="200" placeholder="Interpret" aria-label="Interpret"></div>
       <button id="mAdd">Als Nächstes</button>
@@ -174,8 +190,11 @@ footer a{color:var(--muted)}
 </main>
 <section id="screen" class="hide" aria-live="polite">
   <div>
-    <div class="sc-label">Jetzt läuft</div>
-    <div class="sc-now" id="scNow"></div>
+    <div class="sc-msg hide" id="scMsg"></div>
+    <div id="scNowBlock">
+      <div class="sc-label" id="scNowL">Jetzt läuft</div>
+      <div class="sc-now" id="scNow"></div>
+    </div>
     <div class="sc-label sc-next-l hide" id="scNextL">Als Nächstes</div>
     <div id="scNext"></div>
   </div>
@@ -408,7 +427,7 @@ $("sexp").onclick = () => {
     [], ["Titel", "Interpret", "Anzahl"], ...st.top.map(x => [x.song, x.artist, x.count])
   ]);
 };
-let screenRows = [], screenTimer = null, screenWake = null;
+let curMsg = "", lastBurst, screenRows = [], screenTimer = null, screenWake = null;
 const keyOf = (song, artist) => normText(song) + "|" + normText(artist);
 const sb = (method, path, body) => fetch(SUPABASE_URL + "/rest/v1/" + path, {method, headers: {...hdr(token), Prefer: "return=minimal"}, body: body ? JSON.stringify(body) : undefined});
 async function bAct(fn){ try{ await fn(); }catch(e){} await load(); }
@@ -435,6 +454,7 @@ function bItem(title, sub, btns, cls){
 }
 function renderBeamer(){
   if($("pageB").classList.contains("hide")) return;
+  $("msgNow").textContent = curMsg ? "Aktuell auf dem Beamer: " + curMsg : "Aktuell ist keine Meldung eingestellt.";
   const label = x => x.song + (x.artist ? " – " + x.artist : "");
   const now = screenRows.find(x => x.kind === "now"), next = screenRows.filter(x => x.kind === "next");
   const nowUl = $("bNow"); nowUl.textContent = "";
@@ -467,31 +487,82 @@ $("mAdd").onclick = () => {
   const artist = $("mArtist").value.trim(); $("mSong").value = $("mArtist").value = "";
   bAct(() => addNext(song, artist));
 };
+const MSG_PRESETS = ["Gleich geht’s los", "Kurze Pause", "Danke fürs Mitfeiern!", "Letzte Wünsche!"];
+const EMOJIS = ["🎉", "🔥", "🎶", "❤️", "🕺", "👏", "😍", "🥳"];
+const setSettings = body => fetch(SUPABASE_URL + "/rest/v1/settings?id=eq.1", {method: "PATCH", headers: {...hdr(token), Prefer: "return=minimal"}, body: JSON.stringify(body)});
+async function showMsg(t){ await setSettings({screen_message: t || null}); load(); }
+function insertAtCursor(inp, txt){
+  const a = inp.selectionStart == null ? inp.value.length : inp.selectionStart, b = inp.selectionEnd == null ? a : inp.selectionEnd;
+  inp.value = (inp.value.slice(0, a) + txt + inp.value.slice(b)).slice(0, 120);
+  inp.focus(); try{ inp.setSelectionRange(a + txt.length, a + txt.length); }catch(e){}
+}
+MSG_PRESETS.forEach(t => {
+  const b = document.createElement("button"); b.className = "ghost"; b.textContent = t;
+  b.onclick = () => { $("msgText").value = t; showMsg(t); }; $("mPresets").append(b);
+});
+EMOJIS.forEach(em => {
+  const b1 = document.createElement("button"); b1.className = "ghost em"; b1.textContent = em; b1.setAttribute("aria-label", em + " in den Text einfügen");
+  b1.onclick = () => insertAtCursor($("msgText"), em); $("msgEmojis").append(b1);
+  const b2 = document.createElement("button"); b2.className = "ghost em"; b2.textContent = em; b2.setAttribute("aria-label", em + " auf dem Beamer anzeigen");
+  b2.onclick = () => setSettings({burst: em, burst_at: new Date().toISOString()}); $("burstRow").append(b2);
+});
+$("msgShow").onclick = () => showMsg($("msgText").value.trim());
+$("msgClear").onclick = () => { $("msgText").value = ""; showMsg(""); };
 $("openScreen").onclick = () => window.open(location.href.split("#")[0] + "#screen", "_blank");
 
 // ---- Öffentlicher Bildschirm (Beamer) ----
 async function wakeScreen(){
   try{ if("wakeLock" in navigator && !(screenWake && !screenWake.released)) screenWake = await navigator.wakeLock.request("screen"); }catch(e){}
 }
-function startScreen(){ if(screenTimer) return; refreshScreen(); screenTimer = setInterval(refreshScreen, 5000); wakeScreen(); }
-function stopScreen(){ clearInterval(screenTimer); screenTimer = null; }
+function startScreen(){ if(screenTimer) return; refreshScreen(); screenTimer = setInterval(refreshScreen, 3000); wakeScreen(); }
+function stopScreen(){ clearInterval(screenTimer); screenTimer = null; lastBurst = undefined; }
+let scNowItem = null, scMsgText = "";
+const scAdd = (el, it) => { el.append(it.song); if(it.artist){ const sm = document.createElement("small"); sm.textContent = it.artist; el.append(sm); } };
+function paintScreen(){
+  const has = !!scNowItem;
+  $("scMsg").textContent = scMsgText; $("scMsg").classList.toggle("hide", !scMsgText);
+  $("scNowBlock").classList.toggle("hide", !has && !!scMsgText);
+  $("scNowL").classList.toggle("hide", !has);
+  $("scNow").textContent = "";
+  if(has) scAdd($("scNow"), scNowItem); else if(!scMsgText) $("scNow").textContent = "Gleich geht’s los";
+}
+function spawnEmoji(e){
+  if(!e) return;
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  for(let i = 0; i < (reduce ? 1 : 24); i++){
+    const el = document.createElement("div"); el.className = "emo"; el.textContent = e;
+    el.style.left = (reduce ? 45 : 3 + Math.random() * 90) + "vw";
+    if(reduce) el.style.bottom = "40vh";
+    el.style.setProperty("--d", (3 + Math.random() * 2.5) + "s");
+    el.style.setProperty("--r", (Math.random() * 60 - 30) + "deg");
+    el.style.animationDelay = (reduce ? 0 : Math.random() * 1.2) + "s";
+    el.addEventListener("animationend", () => el.remove());
+    document.body.append(el);
+  }
+}
 async function refreshScreen(){
   try{
     const r = await fetch(SUPABASE_URL + "/rest/v1/screen_items?select=kind,song,artist&order=id.asc", {headers: hdr()});
     if(r.ok){
       const rows = await r.json();
-      const now = rows.find(x => x.kind === "now"), next = rows.filter(x => x.kind === "next").slice(0, 5);
-      const add = (el, it) => { el.append(it.song); if(it.artist){ const sm = document.createElement("small"); sm.textContent = it.artist; el.append(sm); } };
-      $("scNow").textContent = ""; if(now) add($("scNow"), now); else $("scNow").textContent = "Gleich geht’s los";
+      scNowItem = rows.find(x => x.kind === "now") || null;
+      const next = rows.filter(x => x.kind === "next").slice(0, 5);
       $("scNext").textContent = "";
-      next.forEach(it => { const d = document.createElement("div"); d.className = "sc-item"; add(d, it); $("scNext").append(d); });
+      next.forEach(it => { const d = document.createElement("div"); d.className = "sc-item"; scAdd(d, it); $("scNext").append(d); });
       $("scNextL").classList.toggle("hide", !next.length);
+      paintScreen();
     }
   }catch(e){}
   try{
     const r = await fetch(SUPABASE_URL + "/rest/v1/settings?select=*&id=eq.1", {headers: hdr()});
     const j = await r.json();
-    if(j[0]) $("scPause").classList.toggle("hide", j[0].open !== false);
+    if(j[0]){
+      $("scPause").classList.toggle("hide", j[0].open !== false);
+      scMsgText = (j[0].screen_message || "").trim(); paintScreen();
+      const bt = j[0].burst_at || null;
+      if(lastBurst === undefined) lastBurst = bt;
+      else if(bt && bt !== lastBurst){ lastBurst = bt; spawnEmoji(j[0].burst); }
+    }
   }catch(e){}
 }
 $("scQr").onerror = () => { $("scQr").style.display = "none"; };
@@ -530,7 +601,7 @@ async function load(){
   lastRows = rows;
   try{
     const sr = await fetch(SUPABASE_URL + "/rest/v1/settings?select=*&id=eq.1", {headers: hdr(token)});
-    if(sr.ok){ const sj = await sr.json(); if(sj[0]){ isOpen = sj[0].open; spamOn = sj[0].spam_schutz !== false; } }
+    if(sr.ok){ const sj = await sr.json(); if(sj[0]){ isOpen = sj[0].open; spamOn = sj[0].spam_schutz !== false; curMsg = sj[0].screen_message || ""; } }
   }catch(e){}
   updateOpenBtn();
   try{
