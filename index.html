@@ -59,6 +59,19 @@ dialog p{margin:0 0 .5em}
 .wbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:1em}
 button.solid{background:var(--pink);color:var(--bg)}
 #search{margin-bottom:12px}
+#stats{width:min(94vw,560px);max-height:88vh;overflow:auto}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:1em 0}
+.card{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:10px 12px}
+.card b{display:block;font-size:1.3rem;font-weight:800;overflow-wrap:anywhere}
+.card span{color:var(--muted);font-size:.85rem}
+.hrow{display:grid;grid-template-columns:120px 1fr 34px;gap:8px;align-items:center;margin:4px 0;font-size:.9rem}
+.htrack{background:var(--bg);border-radius:6px;height:14px;overflow:hidden}
+.hfill{height:100%;background:var(--yellow)}
+.hfill.max{background:var(--pink)}
+.hn{text-align:right;font-weight:800}
+dialog h3{margin:1.2em 0 .4em;font-size:1rem}
+dialog ol{margin:0;padding-left:1.6em}
+dialog li{display:list-item;background:none;border:0;border-radius:0;padding:2px 0;opacity:1}
 footer{margin-top:2.5em;font-size:.85rem;color:var(--muted)}
 footer a{color:var(--muted)}
 @keyframes flash{0%,60%{box-shadow:0 0 0 4px var(--yellow)}100%{box-shadow:0 0 0 0 transparent}}
@@ -102,6 +115,7 @@ footer a{color:var(--muted)}
           <button role="menuitem" id="spam">Spam-Schutz ausschalten</button>
           <button role="menuitem" id="snd">Ton: an</button>
           <button role="menuitem" id="hide" aria-pressed="false">Gespielte ausblenden</button>
+          <button role="menuitem" id="statsBtn">Statistik</button>
           <button role="menuitem" id="csv">Excel-Export</button>
           <button role="menuitem" id="reload">Aktualisieren</button>
           <button role="menuitem" id="wipeBtn" class="danger">Alle Wünsche löschen …</button>
@@ -125,6 +139,11 @@ footer a{color:var(--muted)}
   <input id="wpw" type="password" autocomplete="current-password">
   <div class="msg err" id="wmsg" role="status"></div>
   <div class="wbtns"><button class="ghost" id="wcancel">Abbrechen</button><button class="solid" id="wgo">Endgültig löschen</button></div>
+</dialog>
+<dialog id="stats" aria-labelledby="st">
+  <h2 id="st">Statistik</h2>
+  <div id="statsBody"></div>
+  <div class="wbtns"><button class="ghost" id="sclose">Schließen</button><button id="sexp">Als Excel-Datei speichern</button></div>
 </dialog>
 <div id="flash"></div>
 <script>
@@ -209,14 +228,13 @@ $("hide").onclick = () => {
   load();
 };
 
-$("csv").onclick = () => {
-  const safe = v => { v = v == null ? "" : String(v); if(/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; };
-  const head = ["Zeit","Titel","Interpret","Gespielt"];
-  const lines = lastRows.map(w => [new Date(w.created_at).toLocaleString("de-DE"), w.song, w.artist, w.done ? "ja" : "nein"].map(safe).join(";"));
-  const blob = new Blob(["\ufeff" + [head.join(";"), ...lines].join("\r\n")], {type:"text/csv;charset=utf-8"});
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "musikwuensche.csv";
+function csvSafe(v){ v = v == null ? "" : String(v); if(/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; }
+function downloadCsv(filename, rows){
+  const blob = new Blob(["\ufeff" + rows.map(r => r.map(csvSafe).join(";")).join("\r\n")], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
   document.body.append(a); a.click(); a.remove();
-};
+}
+$("csv").onclick = () => downloadCsv("musikwuensche.csv", [["Zeit","Titel","Interpret","Gespielt"], ...lastRows.map(w => [new Date(w.created_at).toLocaleString("de-DE"), w.song, w.artist, w.done ? "ja" : "nein"])]);
 
 function blink(){
   const f = $("flash");
@@ -269,6 +287,67 @@ $("wgo").onclick = async () => {
     $("wipe").close(); load();
   }catch(e){ $("wmsg").textContent = "Das hat nicht geklappt. Versuch es noch einmal."; }
   finally{ $("wgo").disabled = false; $("wpw").value = ""; }
+};
+const normText = t => (t || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+function computeStats(rows){
+  if(!rows.length) return {total: 0};
+  const times = rows.map(w => new Date(w.created_at));
+  const first = new Date(Math.min(...times)), last = new Date(Math.max(...times));
+  const hourStart = d => { const x = new Date(d); x.setMinutes(0, 0, 0); return x; };
+  const t0 = hourStart(first).getTime(), slots = [];
+  for(let t = t0; t <= last.getTime(); t += 3600000) slots.push({start: new Date(t), count: 0});
+  times.forEach(d => { const i = Math.floor((hourStart(d).getTime() - t0) / 3600000); if(slots[i]) slots[i].count++; });
+  const multi = first.toDateString() !== last.toDateString();
+  const pad = n => String(n).padStart(2, "0");
+  slots.forEach(sl => {
+    const h = sl.start.getHours();
+    sl.label = (multi ? sl.start.toLocaleDateString("de-DE", {day: "2-digit", month: "2-digit"}) + " " : "") + pad(h) + ":00–" + pad((h + 1) % 24) + ":00";
+  });
+  const songs = new Map();
+  rows.forEach(w => {
+    const k = normText(w.song) + "|" + normText(w.artist);
+    if(!songs.has(k)) songs.set(k, {song: w.song, artist: w.artist || "", count: 0});
+    songs.get(k).count++;
+  });
+  const top = [...songs.values()].sort((x, y) => y.count - x.count || x.song.localeCompare(y.song, "de")).slice(0, 10);
+  const max = Math.max(...slots.map(x => x.count)), min = Math.min(...slots.map(x => x.count));
+  return {total: rows.length, songs: songs.size, first, last, slots, top, max, min,
+          busiest: slots.filter(x => x.count === max), quietest: slots.filter(x => x.count === min)};
+}
+const fmtSlots = a => a.slice(0, 3).map(x => x.label).join(", ") + (a.length > 3 ? " …" : "");
+function renderStats(){
+  const st = computeStats(lastRows), body = $("statsBody");
+  body.textContent = "";
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; };
+  if(!st.total){ body.append(el("p", "", "Noch keine Wünsche.")); $("sexp").disabled = true; return; }
+  $("sexp").disabled = false;
+  const cards = el("div", "cards");
+  const card = (big, small) => { const c = el("div", "card"); c.append(el("b", "", big), el("span", "", small)); cards.append(c); };
+  card(String(st.total), "Wünsche gesamt");
+  card(String(st.songs), "verschiedene Lieder");
+  card(fmtSlots(st.busiest) + " Uhr", "stärkste Zeit, " + st.max + " Wünsche");
+  if(st.slots.length > 1) card(fmtSlots(st.quietest) + " Uhr", "ruhigste Zeit, " + st.min + " Wünsche");
+  body.append(cards, el("h3", "", "Wünsche pro Stunde"));
+  st.slots.forEach(x => {
+    const row = el("div", "hrow"), track = el("div", "htrack"), fill = el("div", "hfill" + (x.count === st.max ? " max" : ""));
+    fill.style.width = (st.max ? x.count / st.max * 100 : 0) + "%";
+    track.append(fill); row.append(el("span", "", x.label), track, el("span", "hn", String(x.count))); body.append(row);
+  });
+  body.append(el("h3", "", "Meistgewünschte Lieder"));
+  const ol = el("ol");
+  st.top.forEach(x => ol.append(el("li", "", x.song + (x.artist ? " – " + x.artist : "") + " (" + x.count + "×)")));
+  body.append(ol);
+}
+$("statsBtn").onclick = () => { renderStats(); $("stats").showModal(); };
+$("sclose").onclick = () => $("stats").close();
+$("sexp").onclick = () => {
+  const st = computeStats(lastRows); if(!st.total) return;
+  downloadCsv("statistik.csv", [
+    ["Wünsche gesamt", st.total], ["Verschiedene Lieder", st.songs],
+    ["Erster Wunsch", st.first.toLocaleString("de-DE")], ["Letzter Wunsch", st.last.toLocaleString("de-DE")],
+    [], ["Uhrzeit", "Wünsche"], ...st.slots.map(x => [x.label, x.count]),
+    [], ["Titel", "Interpret", "Anzahl"], ...st.top.map(x => [x.song, x.artist, x.count])
+  ]);
 };
 let searchTimer;
 $("search").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(load, 250); });
