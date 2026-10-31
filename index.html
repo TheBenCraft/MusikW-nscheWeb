@@ -106,6 +106,25 @@ footer{margin-top:2.5em;font-size:.85rem;color:var(--muted)}
 footer a{color:var(--muted)}
 @keyframes flash{0%,60%{box-shadow:0 0 0 4px var(--yellow)}100%{box-shadow:0 0 0 0 transparent}}
 @media (prefers-reduced-motion:no-preference){#flash.on{animation:pulse .9s ease-in-out 2}li.new{animation:flash 3s ease-out}h1 span{transition:transform .3s}h1:hover span{transform:rotate(2deg)}}
+/* ---- Desktop-Layout ---- */
+@media (min-width:1024px){
+  body{padding:40px 48px}
+  main{max-width:none}
+  #guest{max-width:560px;margin:8vh auto 0}
+  #guest h1{font-size:4.2rem}
+  #guest input{padding:.9em 1em;font-size:1.1rem}
+  #admin{max-width:1400px;margin:0 auto}
+  #login{max-width:420px}
+  #panel{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(360px,1fr);gap:0 40px;align-items:start}
+  #panel.hide{display:none}
+  #panel > .bar,#panel > #status{grid-column:1 / -1}
+  #panel > .tabs{display:none}
+  #pageW,#pageB{display:block !important}
+  #pageB{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow:auto;padding-right:8px}
+  #pageB .sub:first-child{margin-top:0}
+  #list{grid-template-columns:1fr}
+  li:hover{background:#292258}
+}
 </style>
 </head>
 <body>
@@ -453,7 +472,7 @@ function bItem(title, sub, btns, cls){
   li.append(info, act); return li;
 }
 function renderBeamer(){
-  if($("pageB").classList.contains("hide")) return;
+  if($("pageB").classList.contains("hide") && !matchMedia("(min-width:1024px)").matches) return;
   $("msgNow").textContent = curMsg ? "Aktuell auf dem Beamer: " + curMsg : "Aktuell ist keine Meldung eingestellt.";
   const label = x => x.song + (x.artist ? " – " + x.artist : "");
   const now = screenRows.find(x => x.kind === "now"), next = screenRows.filter(x => x.kind === "next");
