@@ -72,6 +72,28 @@ button.solid{background:var(--pink);color:var(--bg)}
 dialog h3{margin:1.2em 0 .4em;font-size:1rem}
 dialog ol{margin:0;padding-left:1.6em}
 dialog li{display:list-item;background:none;border:0;border-radius:0;padding:2px 0;opacity:1}
+.tabs{display:flex;gap:6px;margin:0 0 14px}
+.tabs button{background:transparent;color:var(--muted);border:2px solid var(--line)}
+.tabs button[aria-selected=true]{background:var(--yellow);color:var(--bg);border-color:var(--yellow)}
+.sub{margin:1.4em 0 .5em;font-size:1rem;color:var(--muted)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+#bsearch{margin-bottom:12px}
+li.now{border-left-color:var(--yellow)}
+button:disabled{opacity:.5;cursor:default}
+body.sm{display:block;padding:0;cursor:none;overflow:hidden}
+#screen{min-height:100vh;display:grid;grid-template-columns:1fr minmax(240px,30vw);gap:4vw;padding:5vh 4vw;background:var(--bg);color:#fff}
+#screen.hide{display:none}
+.sc-label{font-size:clamp(1rem,2.2vw,2rem);text-transform:uppercase;letter-spacing:.12em;color:var(--yellow);font-weight:800}
+.sc-now{font-size:clamp(2rem,6.5vw,7rem);font-weight:800;line-height:1.05;margin:.2em 0 .1em;overflow-wrap:anywhere}
+.sc-now small{display:block;font-size:.5em;font-weight:400;color:#d9d2f5}
+.sc-next-l{margin-top:6vh;color:var(--pink)}
+.sc-item{font-size:clamp(1.2rem,3.4vw,3.4rem);font-weight:700;margin:.35em 0;overflow-wrap:anywhere}
+.sc-item small{font-weight:400;color:#d9d2f5}
+.sc-qr{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2vh}
+.sc-qr img{width:100%;max-width:28vw;background:#fff;padding:1.2vw;border-radius:1.2vw}
+.sc-cta{font-size:clamp(1.4rem,3vw,3rem);font-weight:800}
+.sc-pause{background:var(--pink);color:var(--bg);padding:.4em .8em;border-radius:12px;font-weight:800;font-size:clamp(1rem,2vw,2rem)}
+@media (max-width:800px){#screen{grid-template-columns:1fr}.sc-qr img{max-width:60vw}}
 footer{margin-top:2.5em;font-size:.85rem;color:var(--muted)}
 footer a{color:var(--muted)}
 @keyframes flash{0%,60%{box-shadow:0 0 0 4px var(--yellow)}100%{box-shadow:0 0 0 0 transparent}}
@@ -79,7 +101,7 @@ footer a{color:var(--muted)}
 </style>
 </head>
 <body>
-<main>
+<main id="page">
 
 <section id="guest">
   <h1>Was soll <span>laufen?</span></h1>
@@ -124,13 +146,45 @@ footer a{color:var(--muted)}
       </div>
     </div>
     <div id="status"></div>
-    <input id="search" type="search" placeholder="Suchen nach Titel, Interpret oder Name" aria-label="Wunschliste durchsuchen" autocomplete="off">
-    <ul id="list"></ul>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabW" aria-selected="true">Wünsche</button>
+      <button role="tab" id="tabB" aria-selected="false">Beamer</button>
+    </div>
+    <div id="pageW">
+      <input id="search" type="search" placeholder="Suchen nach Titel, Interpret oder Name" aria-label="Wunschliste durchsuchen" autocomplete="off">
+      <ul id="list"></ul>
+    </div>
+    <div id="pageB" class="hide">
+      <h3 class="sub">Läuft jetzt</h3>
+      <ul id="bNow"></ul>
+      <h3 class="sub">Als Nächstes</h3>
+      <ul id="bNext"></ul>
+      <h3 class="sub">Eigenen Titel hinzufügen</h3>
+      <div class="two"><input id="mSong" maxlength="200" placeholder="Titel" aria-label="Titel"><input id="mArtist" maxlength="200" placeholder="Interpret" aria-label="Interpret"></div>
+      <button id="mAdd">Als Nächstes</button>
+      <h3 class="sub">Wünsche auswählen</h3>
+      <input id="bsearch" type="search" placeholder="Wünsche durchsuchen" aria-label="Wünsche durchsuchen" autocomplete="off">
+      <ul id="bWishes"></ul>
+      <p><button class="ghost" id="openScreen">Beamer-Ansicht öffnen</button></p>
+    </div>
   </div>
 </section>
 
 <footer><a href="impressum.html">Impressum</a> &nbsp; <a href="datenschutz.html">Datenschutz</a></footer>
 </main>
+<section id="screen" class="hide" aria-live="polite">
+  <div>
+    <div class="sc-label">Jetzt läuft</div>
+    <div class="sc-now" id="scNow"></div>
+    <div class="sc-label sc-next-l hide" id="scNextL">Als Nächstes</div>
+    <div id="scNext"></div>
+  </div>
+  <aside class="sc-qr">
+    <img id="scQr" src="qr.png" alt="QR-Code zum Wünschen">
+    <div class="sc-cta">Wünsch dir was!</div>
+    <div class="sc-pause hide" id="scPause">Wünsche sind gerade pausiert</div>
+  </aside>
+</section>
 <dialog id="wipe" aria-labelledby="wt">
   <h2 id="wt">Alle Wünsche löschen?</h2>
   <p>Damit werden alle Wünsche endgültig entfernt. Das lässt sich nicht rückgängig machen.</p>
@@ -159,11 +213,15 @@ let token = null, timer = null, lastRows = [], hideDone = false;
 let adminMail = "", knownIds = null, soundOn = true, audioCtx = null, wakeLock = null, isOpen = true, spamOn = true;
 
 function route(){
-  const isAdmin = location.hash === "#admin";
-  $("guest").classList.toggle("hide", isAdmin);
-  $("admin").classList.toggle("hide", !isAdmin);
+  const h = location.hash;
+  $("screen").classList.toggle("hide", h !== "#screen");
+  $("page").classList.toggle("hide", h === "#screen");
+  document.body.classList.toggle("sm", h === "#screen");
+  $("guest").classList.toggle("hide", h === "#admin");
+  $("admin").classList.toggle("hide", h !== "#admin");
+  if(h === "#screen") startScreen(); else stopScreen();
 }
-addEventListener("hashchange", route); route();
+addEventListener("hashchange", route);
 
 // ---- Gäste ----
 const COOLDOWN = 120; // Sekunden zwischen zwei Wünschen pro Gerät
@@ -284,6 +342,7 @@ $("wgo").onclick = async () => {
     if($("wbackup").checked && lastRows.length) $("csv").onclick();
     const d = await fetch(base + "?id=gte.0", {method:"DELETE", headers: hdr(token)});
     if(!d.ok) throw 0;
+    await fetch(SUPABASE_URL + "/rest/v1/screen_items?id=gte.0", {method:"DELETE", headers: hdr(token)});
     $("wipe").close(); load();
   }catch(e){ $("wmsg").textContent = "Das hat nicht geklappt. Versuch es noch einmal."; }
   finally{ $("wgo").disabled = false; $("wpw").value = ""; }
@@ -349,6 +408,98 @@ $("sexp").onclick = () => {
     [], ["Titel", "Interpret", "Anzahl"], ...st.top.map(x => [x.song, x.artist, x.count])
   ]);
 };
+let screenRows = [], screenTimer = null, screenWake = null;
+const keyOf = (song, artist) => normText(song) + "|" + normText(artist);
+const sb = (method, path, body) => fetch(SUPABASE_URL + "/rest/v1/" + path, {method, headers: {...hdr(token), Prefer: "return=minimal"}, body: body ? JSON.stringify(body) : undefined});
+async function bAct(fn){ try{ await fn(); }catch(e){} await load(); }
+const addNext = (song, artist) => sb("POST", "screen_items", {kind: "next", song, artist: artist || null});
+async function promote(it){
+  const oldNow = screenRows.filter(x => x.kind === "now").map(x => x.id);
+  await sb("PATCH", "screen_items?id=eq." + it.id, {kind: "now"});
+  if(oldNow.length) await sb("DELETE", "screen_items?id=in.(" + oldNow.join(",") + ")");
+  const ids = lastRows.filter(w => keyOf(w.song, w.artist) === keyOf(it.song, it.artist)).map(w => w.id);
+  if(ids.length) await sb("PATCH", "wishes?id=in.(" + ids.join(",") + ")", {done: true});
+}
+function emptyLi(text){ const li = document.createElement("li"); li.textContent = text; return li; }
+function bItem(title, sub, btns, cls){
+  const li = document.createElement("li"); if(cls) li.className = cls;
+  const info = document.createElement("div"), t = document.createElement("div");
+  t.className = "t"; t.textContent = title; info.append(t);
+  if(sub){ const x = document.createElement("div"); x.className = "s"; x.textContent = sub; info.append(x); }
+  const act = document.createElement("div"); act.className = "act";
+  btns.forEach(([label, fn, ghost, off]) => {
+    const b = document.createElement("button"); b.textContent = label; if(ghost) b.className = "ghost";
+    if(off) b.disabled = true; else b.onclick = fn; act.append(b);
+  });
+  li.append(info, act); return li;
+}
+function renderBeamer(){
+  if($("pageB").classList.contains("hide")) return;
+  const label = x => x.song + (x.artist ? " – " + x.artist : "");
+  const now = screenRows.find(x => x.kind === "now"), next = screenRows.filter(x => x.kind === "next");
+  const nowUl = $("bNow"); nowUl.textContent = "";
+  nowUl.append(now ? bItem(label(now), "", [["Entfernen", () => bAct(() => sb("DELETE", "screen_items?id=eq." + now.id)), true]], "now") : emptyLi("Noch nichts ausgewählt."));
+  const nextUl = $("bNext"); nextUl.textContent = "";
+  if(!next.length) nextUl.append(emptyLi("Die Warteschlange ist leer."));
+  next.forEach((it, i) => nextUl.append(bItem((i + 1) + ". " + label(it), "", [
+    ["Läuft jetzt", () => bAct(() => promote(it))],
+    ["Entfernen", () => bAct(() => sb("DELETE", "screen_items?id=eq." + it.id)), true]])));
+  const onScreen = new Set(screenRows.map(x => keyOf(x.song, x.artist)));
+  const groups = new Map();
+  lastRows.filter(w => !w.done).forEach(w => { const k = keyOf(w.song, w.artist); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(w); });
+  const q = normText($("bsearch").value);
+  const list = [...groups.entries()].filter(([k, g]) => !q || normText(g[0].song + " " + (g[0].artist || "")).includes(q)).sort((x, y) => y[1].length - x[1].length);
+  const ul = $("bWishes"); ul.textContent = "";
+  if(!list.length) ul.append(emptyLi(q ? "Keine Treffer." : "Keine offenen Wünsche."));
+  list.forEach(([k, g]) => ul.append(bItem(label(g[0]), g.length > 1 ? g.length + "× gewünscht" : "", [
+    onScreen.has(k) ? ["Schon auf dem Beamer", null, true, true] : ["Als Nächstes", () => bAct(() => addNext(g[0].song, g[0].artist))]])));
+}
+function showTab(b){
+  $("pageW").classList.toggle("hide", b); $("pageB").classList.toggle("hide", !b);
+  $("tabW").setAttribute("aria-selected", !b); $("tabB").setAttribute("aria-selected", b);
+  if(b) renderBeamer();
+}
+$("tabW").onclick = () => showTab(false);
+$("tabB").onclick = () => showTab(true);
+$("bsearch").addEventListener("input", renderBeamer);
+$("mAdd").onclick = () => {
+  const song = $("mSong").value.trim(); if(!song) return;
+  const artist = $("mArtist").value.trim(); $("mSong").value = $("mArtist").value = "";
+  bAct(() => addNext(song, artist));
+};
+$("openScreen").onclick = () => window.open(location.href.split("#")[0] + "#screen", "_blank");
+
+// ---- Öffentlicher Bildschirm (Beamer) ----
+async function wakeScreen(){
+  try{ if("wakeLock" in navigator && !(screenWake && !screenWake.released)) screenWake = await navigator.wakeLock.request("screen"); }catch(e){}
+}
+function startScreen(){ if(screenTimer) return; refreshScreen(); screenTimer = setInterval(refreshScreen, 5000); wakeScreen(); }
+function stopScreen(){ clearInterval(screenTimer); screenTimer = null; }
+async function refreshScreen(){
+  try{
+    const r = await fetch(SUPABASE_URL + "/rest/v1/screen_items?select=kind,song,artist&order=id.asc", {headers: hdr()});
+    if(r.ok){
+      const rows = await r.json();
+      const now = rows.find(x => x.kind === "now"), next = rows.filter(x => x.kind === "next").slice(0, 5);
+      const add = (el, it) => { el.append(it.song); if(it.artist){ const sm = document.createElement("small"); sm.textContent = it.artist; el.append(sm); } };
+      $("scNow").textContent = ""; if(now) add($("scNow"), now); else $("scNow").textContent = "Gleich geht’s los";
+      $("scNext").textContent = "";
+      next.forEach(it => { const d = document.createElement("div"); d.className = "sc-item"; add(d, it); $("scNext").append(d); });
+      $("scNextL").classList.toggle("hide", !next.length);
+    }
+  }catch(e){}
+  try{
+    const r = await fetch(SUPABASE_URL + "/rest/v1/settings?select=*&id=eq.1", {headers: hdr()});
+    const j = await r.json();
+    if(j[0]) $("scPause").classList.toggle("hide", j[0].open !== false);
+  }catch(e){}
+}
+$("scQr").onerror = () => { $("scQr").style.display = "none"; };
+document.addEventListener("keydown", e => {
+  if(location.hash === "#screen" && (e.key === "f" || e.key === "F")){
+    if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen();
+  }
+});
 let searchTimer;
 $("search").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(load, 250); });
 function closeMenu(){ $("menu").classList.add("hide"); $("menuBtn").setAttribute("aria-expanded", "false"); }
@@ -370,7 +521,7 @@ async function requestWake(){
     if(token && "wakeLock" in navigator && !(wakeLock && !wakeLock.released)) wakeLock = await navigator.wakeLock.request("screen");
   }catch(e){}
 }
-document.addEventListener("visibilitychange", () => { if(!document.hidden){ document.title = "Musikwunsch"; requestWake(); } });
+document.addEventListener("visibilitychange", () => { if(!document.hidden){ document.title = "Musikwunsch"; requestWake(); if(location.hash === "#screen") wakeScreen(); } });
 
 async function load(){
   const r = await fetch(base + "?select=*&order=created_at.desc", {headers: hdr(token)});
@@ -382,6 +533,11 @@ async function load(){
     if(sr.ok){ const sj = await sr.json(); if(sj[0]){ isOpen = sj[0].open; spamOn = sj[0].spam_schutz !== false; } }
   }catch(e){}
   updateOpenBtn();
+  try{
+    const sc = await fetch(SUPABASE_URL + "/rest/v1/screen_items?select=*&order=id.asc", {headers: hdr(token)});
+    if(sc.ok) screenRows = await sc.json();
+  }catch(e){}
+  renderBeamer();
   const newIds = knownIds ? rows.filter(x => !knownIds.has(x.id)).map(x => x.id) : [];
   knownIds = new Set(rows.map(x => x.id));
   if(newIds.length){ blink(); beep(); if(document.hidden) document.title = "● Neuer Wunsch"; }
@@ -416,6 +572,7 @@ async function load(){
     act.append(b1, b2); li.append(info, act); ul.append(li);
   });
 }
+route();
 </script>
 </body>
 </html>
