@@ -72,9 +72,6 @@ button.solid{background:var(--pink);color:var(--bg)}
 dialog h3{margin:1.2em 0 .4em;font-size:1rem}
 dialog ol{margin:0;padding-left:1.6em}
 dialog li{display:list-item;background:none;border:0;border-radius:0;padding:2px 0;opacity:1}
-.tabs{display:flex;gap:6px;margin:0 0 14px}
-.tabs button{background:transparent;color:var(--muted);border:2px solid var(--line)}
-.tabs button[aria-selected=true]{background:var(--yellow);color:var(--bg);border-color:var(--yellow)}
 .sub{margin:1.4em 0 .5em;font-size:1rem;color:var(--muted)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 #bsearch{margin-bottom:12px}
@@ -108,10 +105,16 @@ footer a{color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){#flash.on{animation:pulse .9s ease-in-out 2}li.new{animation:flash 3s ease-out}h1 span{transition:transform .3s}h1:hover span{transform:rotate(2deg)}}
 /* ---- Menü und Kopfzeile (auch am Handy) ---- */
 .bar > span{order:1;flex:1 1 220px}
-.menuwrap{order:2;margin-left:auto}
+.bar > .menuwrap{order:2;margin-left:auto}
 .menu{max-width:calc(100vw - 32px)}
 #admin{width:100%;margin:0 auto}
 #gEmojis button{min-height:48px}
+.viewbar{margin:0 0 14px}
+.menu.left{left:0;right:auto}
+.menu button[aria-checked=true]::before{content:"✓ "}
+.chips .em[aria-pressed=true]{background:var(--yellow);color:var(--bg);border-color:var(--yellow)}
+#emo{width:min(94vw,460px);max-height:88vh;overflow:auto}
+#emo .two{grid-template-columns:1fr auto;align-items:center}
 /* ---- Desktop-Layout ---- */
 @media (min-width:1024px){
   body{padding:40px 48px}
@@ -123,7 +126,7 @@ footer a{color:var(--muted)}
   #admin:has(#panel:not(.hide)){max-width:760px}
   #admin:has(#panel.both:not(.hide)){max-width:1400px}
   #panel.both:not(.hide){display:grid;grid-template-columns:minmax(0,1.2fr) minmax(360px,1fr);gap:0 40px;align-items:start}
-  #panel.both > .bar,#panel.both > #status,#panel.both > .tabs{grid-column:1 / -1}
+  #panel.both > .bar,#panel.both > #status,#panel.both > .viewbar{grid-column:1 / -1}
   #panel.both #pageB{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow:auto;padding-right:8px}
   #panel.both #pageB .sub:first-child{margin-top:0}
   li:hover{background:#292258}
@@ -145,9 +148,11 @@ footer a{color:var(--muted)}
     <input id="name" maxlength="60" autocomplete="off">
     <button class="main" id="send">Wunsch abschicken</button>
     <div class="msg" id="gmsg" role="status"></div>
-    <h3 class="sub">Oder schick ein Emoji auf den Beamer</h3>
-    <div class="chips" id="gEmojis"></div>
-    <div class="msg" id="emsg" role="status"></div>
+    <div id="emojiBox" class="hide">
+      <h3 class="sub">Oder schick ein Emoji auf den Beamer</h3>
+      <div class="chips" id="gEmojis"></div>
+      <div class="msg" id="emsg" role="status"></div>
+    </div>
   </div>
 </section>
 
@@ -168,6 +173,8 @@ footer a{color:var(--muted)}
         <div class="menu hide" id="menu" role="menu">
           <button role="menuitem" id="open">Wünsche pausieren</button>
           <button role="menuitem" id="spam">Spam-Schutz ausschalten</button>
+          <button role="menuitem" id="gem">Gäste-Emojis ausschalten</button>
+          <button role="menuitem" id="emoBtn">Erlaubte Emojis festlegen …</button>
           <button role="menuitem" id="snd">Ton: an</button>
           <button role="menuitem" id="hide" aria-pressed="false">Gespielte ausblenden</button>
           <button role="menuitem" id="statsBtn">Statistik</button>
@@ -179,10 +186,13 @@ footer a{color:var(--muted)}
       </div>
     </div>
     <div id="status"></div>
-    <div class="tabs" role="tablist">
-      <button role="tab" id="tabW" aria-selected="true">Wünsche</button>
-      <button role="tab" id="tabB" aria-selected="false">Beamer</button>
-      <button role="tab" id="tabBoth" aria-selected="false">Beides</button>
+    <div class="viewbar menuwrap">
+      <button class="ghost" id="viewBtn" aria-haspopup="true" aria-expanded="false">Ansicht: Wünsche ▾</button>
+      <div class="menu left hide" id="viewMenu" role="menu">
+        <button role="menuitemradio" id="vW" aria-checked="true">Wünsche</button>
+        <button role="menuitemradio" id="vB" aria-checked="false">Beamer</button>
+        <button role="menuitemradio" id="vBoth" aria-checked="false">Beides: Wünsche und Beamer</button>
+      </div>
     </div>
     <div id="pageW">
       <input id="search" type="search" placeholder="Suchen nach Titel, Interpret oder Name" aria-label="Wunschliste durchsuchen" autocomplete="off">
@@ -243,8 +253,18 @@ footer a{color:var(--muted)}
   <div id="statsBody"></div>
   <div class="wbtns"><button class="ghost" id="sclose">Schließen</button><button id="sexp">Als Excel-Datei speichern</button></div>
 </dialog>
+<dialog id="emo" aria-labelledby="et">
+  <h2 id="et">Erlaubte Emojis</h2>
+  <p>Tippe auf ein Emoji, um es zu erlauben oder zu sperren. Die Auswahl gilt für die Gäste und für deine Emoji-Tasten im Beamer-Bereich.</p>
+  <div class="chips" id="emoPalette"></div>
+  <label for="emoCustom">Eigenes Emoji hinzufügen</label>
+  <div class="two"><input id="emoCustom" maxlength="40" autocomplete="off" aria-label="Eigenes Emoji"><button id="emoAdd">Hinzufügen</button></div>
+  <div class="msg err" id="emoMsg" role="status"></div>
+  <div class="wbtns"><button class="ghost" id="emoCancel">Abbrechen</button><button id="emoSave">Speichern</button></div>
+</dialog>
 <div id="flash"></div>
 <script>
+
 // ===== Hier eintragen (Supabase: Project Settings > API) =====
 const SUPABASE_URL = "https://yrewxcoulmmobpdjmzxb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyZXd4Y291bG1tb2JwZGptenhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzMDI2ODIsImV4cCI6MjEwODg3ODY4Mn0.ofJbAC4mw9gyxMWq5exFtkcXGtMCTRr1ByHNn_VbjOU";
@@ -254,7 +274,15 @@ const $ = id => document.getElementById(id);
 const base = SUPABASE_URL + "/rest/v1/wishes";
 const hdr = tok => ({apikey: SUPABASE_KEY, Authorization: "Bearer " + (tok || SUPABASE_KEY), "Content-Type": "application/json"});
 let token = null, timer = null, lastRows = [], hideDone = false;
-const EMOJIS = ["🎉", "🔥", "🎶", "❤️", "🕺", "👏", "😍", "🥳"];
+const DEFAULT_EMOJIS = ["🎉", "🔥", "🎶", "❤️", "🕺", "👏", "😍", "🥳"];
+const PALETTE = ["🎉", "🔥", "🎶", "❤️", "🕺", "👏", "😍", "🥳", "💃", "🎤", "🎸", "🥂", "🍻", "😎", "🤩", "😂", "🙌", "👍", "💖", "✨", "🪩", "🎧", "🚀", "🤘"];
+let emojiList = DEFAULT_EMOJIS.slice(), guestEmojis = true, guestPainted = false;
+function applySettings(j){ // true, wenn sich die Emoji-Einstellungen geändert haben
+  const list = (j.emoji_list || "").split(" ").filter(Boolean);
+  const nl = list.length ? list : DEFAULT_EMOJIS.slice(), ng = j.guest_emojis !== false;
+  const changed = ng !== guestEmojis || nl.join(" ") !== emojiList.join(" ");
+  guestEmojis = ng; emojiList = nl; return changed;
+}
 let adminMail = "", knownIds = null, soundOn = true, audioCtx = null, wakeLock = null, isOpen = true, spamOn = true;
 
 function route(){
@@ -283,7 +311,7 @@ async function checkOpen(){
   try{
     const r = await fetch(SUPABASE_URL + "/rest/v1/settings?select=*&id=eq.1", {headers: hdr()});
     const j = await r.json();
-    if(j[0]){ spamOn = j[0].spam_schutz !== false; if(j[0].open === false){ closedUI(); return false; } }
+    if(j[0]){ spamOn = j[0].spam_schutz !== false; if(applySettings(j[0]) || !guestPainted) paintGuestEmojis(); if(j[0].open === false){ closedUI(); return false; } }
   }catch(e){}
   return true;
 }
@@ -301,10 +329,17 @@ async function guestEmoji(em){
     m.className = "msg ok"; m.textContent = "Dein Emoji ist unterwegs!";
   }catch(e){ m.className = "msg err"; m.textContent = "Das hat nicht geklappt. Versuch es gleich noch einmal."; }
 }
-EMOJIS.forEach(em => {
-  const b = document.createElement("button"); b.className = "ghost em"; b.textContent = em; b.setAttribute("aria-label", em + " auf den Beamer schicken");
-  b.onclick = () => guestEmoji(em); $("gEmojis").append(b);
-});
+function paintGuestEmojis(){
+  guestPainted = true;
+  const box = $("gEmojis"); box.textContent = "";
+  const show = guestEmojis && emojiList.length > 0;
+  $("emojiBox").classList.toggle("hide", !show);
+  if(!show) return;
+  emojiList.forEach(em => {
+    const b = document.createElement("button"); b.className = "ghost em"; b.textContent = em; b.setAttribute("aria-label", em + " auf den Beamer schicken");
+    b.onclick = () => guestEmoji(em); box.append(b);
+  });
+}
 checkOpen();
 $("send").onclick = async () => {
   const song = $("song").value.trim(), artist = $("artist").value.trim(), name = $("name").value.trim();
@@ -385,10 +420,13 @@ function updateOpenBtn(){
   $("open").classList.toggle("paused", !isOpen);
   $("spam").textContent = spamOn ? "Spam-Schutz ausschalten" : "Spam-Schutz einschalten";
   $("spam").classList.toggle("paused", !spamOn);
+  $("gem").textContent = guestEmojis ? "Gäste-Emojis ausschalten" : "Gäste-Emojis einschalten";
+  $("gem").classList.toggle("paused", !guestEmojis);
   const st = $("status"); st.textContent = "";
   const chip = (t, y) => { const c = document.createElement("span"); c.className = "chip" + (y ? " y" : ""); c.textContent = t; st.append(c); };
   if(!isOpen) chip("Wünsche pausiert");
   if(!spamOn) chip("Spam-Schutz aus", true);
+  if(!guestEmojis) chip("Gäste-Emojis aus", true);
 }
 $("spam").onclick = async () => {
   await fetch(SUPABASE_URL + "/rest/v1/settings?id=eq.1", {method:"PATCH", headers: hdr(token), body: JSON.stringify({spam_schutz: !spamOn})});
@@ -520,16 +558,18 @@ function renderBeamer(){
   list.forEach(([k, g]) => ul.append(bItem(label(g[0]), g.length > 1 ? g.length + "× gewünscht" : "", [
     onScreen.has(k) ? ["Schon auf dem Beamer", null, true, true] : ["Als Nächstes", () => bAct(() => addNext(g[0].song, g[0].artist))]])));
 }
+const VIEWS = {w: "Wünsche", b: "Beamer", both: "Beides"};
 function showTab(mode){
   $("pageW").classList.toggle("hide", mode === "b"); $("pageB").classList.toggle("hide", mode === "w");
   $("panel").classList.toggle("both", mode === "both");
-  [["tabW","w"],["tabB","b"],["tabBoth","both"]].forEach(([id, m]) => $(id).setAttribute("aria-selected", mode === m));
+  [["vW","w"],["vB","b"],["vBoth","both"]].forEach(([id, m]) => $(id).setAttribute("aria-checked", mode === m));
+  $("viewBtn").textContent = "Ansicht: " + VIEWS[mode] + " ▾";
   store.set("adminTab", mode);
   if(mode !== "w") renderBeamer();
 }
-$("tabW").onclick = () => showTab("w");
-$("tabB").onclick = () => showTab("b");
-$("tabBoth").onclick = () => showTab("both");
+$("vW").onclick = () => showTab("w");
+$("vB").onclick = () => showTab("b");
+$("vBoth").onclick = () => showTab("both");
 $("bsearch").addEventListener("input", renderBeamer);
 $("mAdd").onclick = () => {
   const song = $("mSong").value.trim(); if(!song) return;
@@ -543,10 +583,44 @@ MSG_PRESETS.forEach(t => {
   const b = document.createElement("button"); b.className = "ghost"; b.textContent = t;
   b.onclick = () => { $("msgText").value = t; showMsg(t); }; $("mPresets").append(b);
 });
-EMOJIS.forEach(em => {
-  const b = document.createElement("button"); b.className = "ghost em"; b.textContent = em; b.setAttribute("aria-label", em + " auf dem Beamer anzeigen");
-  b.onclick = () => setSettings({burst: em, burst_at: new Date().toISOString()}); $("burstRow").append(b);
-});
+function paintBurstRow(){
+  const row = $("burstRow"); row.textContent = "";
+  emojiList.forEach(em => {
+    const b = document.createElement("button"); b.className = "ghost em"; b.textContent = em; b.setAttribute("aria-label", em + " auf dem Beamer anzeigen");
+    b.onclick = () => setSettings({burst: em, burst_at: new Date().toISOString()}); row.append(b);
+  });
+}
+paintBurstRow();
+
+// Gäste-Emojis ein/aus und erlaubte Emojis festlegen
+$("gem").onclick = async () => { await setSettings({guest_emojis: !guestEmojis}); load(); };
+let emoSel = [];
+const seg = t => { try{ return [...new Intl.Segmenter(undefined, {granularity: "grapheme"}).segment(t)].map(x => x.segment); }catch(e){ return Array.from(t); } };
+function paintEmoPalette(){
+  const box = $("emoPalette"); box.textContent = "";
+  [...new Set([...PALETTE, ...emoSel])].forEach(em => {
+    const b = document.createElement("button"); b.className = "ghost em"; b.textContent = em; b.setAttribute("aria-label", em);
+    b.setAttribute("aria-pressed", emoSel.includes(em));
+    b.onclick = () => { emoSel = emoSel.includes(em) ? emoSel.filter(x => x !== em) : [...emoSel, em]; paintEmoPalette(); };
+    box.append(b);
+  });
+}
+$("emoBtn").onclick = () => { emoSel = emojiList.slice(); $("emoCustom").value = ""; $("emoMsg").textContent = ""; paintEmoPalette(); $("emo").showModal(); };
+$("emoAdd").onclick = () => {
+  const add = seg($("emoCustom").value).filter(x => /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(x));
+  if(!add.length){ $("emoMsg").textContent = "Bitte gib ein Emoji ein."; return; }
+  add.forEach(x => { if(!emoSel.includes(x)) emoSel.push(x); });
+  $("emoCustom").value = ""; $("emoMsg").textContent = ""; paintEmoPalette();
+};
+$("emoCancel").onclick = () => $("emo").close();
+$("emoSave").onclick = async () => {
+  if(!emoSel.length){ $("emoMsg").textContent = "Bitte wähle mindestens ein Emoji."; return; }
+  if(emoSel.length > 16){ $("emoMsg").textContent = "Es sind höchstens 16 Emojis möglich."; return; }
+  $("emoSave").disabled = true;
+  try{ const r = await setSettings({emoji_list: emoSel.join(" ")}); if(!r.ok) throw 0; $("emo").close(); load(); }
+  catch(e){ $("emoMsg").textContent = "Das hat nicht geklappt. Wurde das neue SQL ausgeführt?"; }
+  finally{ $("emoSave").disabled = false; }
+};
 $("msgShow").onclick = () => showMsg($("msgText").value.trim());
 $("msgClear").onclick = () => { $("msgText").value = ""; showMsg(""); };
 $("openScreen").onclick = () => window.open(location.href.split("#")[0] + "#screen", "_blank");
@@ -614,15 +688,22 @@ document.addEventListener("keydown", e => {
 });
 let searchTimer;
 $("search").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(load, 250); });
-function closeMenu(){ $("menu").classList.add("hide"); $("menuBtn").setAttribute("aria-expanded", "false"); }
-$("menuBtn").onclick = e => {
-  e.stopPropagation();
-  const open = $("menu").classList.toggle("hide") === false;
-  $("menuBtn").setAttribute("aria-expanded", open);
-};
-$("menu").addEventListener("click", e => { if(e.target.closest("button")) closeMenu(); });
-document.addEventListener("click", e => { if(!e.target.closest(".menuwrap")) closeMenu(); });
-document.addEventListener("keydown", e => { if(e.key === "Escape") closeMenu(); });
+function closeMenus(){
+  document.querySelectorAll(".menu").forEach(m => m.classList.add("hide"));
+  document.querySelectorAll("[aria-haspopup]").forEach(x => x.setAttribute("aria-expanded", "false"));
+}
+function wireMenu(btn, menu){
+  btn.onclick = e => {
+    e.stopPropagation();
+    const wasHidden = menu.classList.contains("hide");
+    closeMenus();
+    if(wasHidden){ menu.classList.remove("hide"); btn.setAttribute("aria-expanded", "true"); }
+  };
+  menu.addEventListener("click", e => { if(e.target.closest("button")) closeMenus(); });
+}
+wireMenu($("menuBtn"), $("menu")); wireMenu($("viewBtn"), $("viewMenu"));
+document.addEventListener("click", e => { if(!e.target.closest(".menuwrap")) closeMenus(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeMenus(); });
 $("open").onclick = async () => {
   await fetch(SUPABASE_URL + "/rest/v1/settings?id=eq.1", {method:"PATCH", headers: hdr(token), body: JSON.stringify({open: !isOpen})});
   load();
@@ -642,7 +723,7 @@ async function load(){
   lastRows = rows;
   try{
     const sr = await fetch(SUPABASE_URL + "/rest/v1/settings?select=*&id=eq.1", {headers: hdr(token)});
-    if(sr.ok){ const sj = await sr.json(); if(sj[0]){ isOpen = sj[0].open; spamOn = sj[0].spam_schutz !== false; curMsg = sj[0].screen_message || ""; } }
+    if(sr.ok){ const sj = await sr.json(); if(sj[0]){ isOpen = sj[0].open; spamOn = sj[0].spam_schutz !== false; curMsg = sj[0].screen_message || ""; if(applySettings(sj[0])) paintBurstRow(); } }
   }catch(e){}
   updateOpenBtn();
   try{
