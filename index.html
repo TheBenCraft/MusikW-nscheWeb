@@ -47,7 +47,6 @@ li{flex-wrap:wrap}
 li > div:first-child{flex:1 1 200px}
 #panel button{min-height:44px;padding:.6em 1em}
 #panel .t{font-size:1.25rem}
-button.paused{background:var(--pink);color:var(--bg);border-color:var(--pink)}
 #flash{position:fixed;inset:0;pointer-events:none;background:var(--yellow);opacity:0;z-index:50}
 @keyframes pulse{0%,100%{opacity:0}35%{opacity:.18}}
 footer{margin-top:2.5em;font-size:.85rem;color:var(--muted)}
@@ -149,10 +148,14 @@ $("send").onclick = async () => {
   const song = $("song").value.trim(), artist = $("artist").value.trim(), name = $("name").value.trim();
   const m = $("gmsg");
   if(!song){ m.className = "msg err"; m.textContent = "Bitte gib einen Titel ein."; return; }
-  const wait = Math.ceil(COOLDOWN - (Date.now() - Number(store.get("lastWish") || 0)) / 1000);
-  if(spamOn && wait > 0){ m.className = "msg err"; m.textContent = "Bitte warte noch " + wait + " Sekunden, bevor du den nächsten Wunsch abschickst."; return; }
   $("send").disabled = true;
   try{
+    if(!(await checkOpen())) return; // holt auch den aktuellen Stand des Spam-Schutzes
+    const wait = Math.ceil(COOLDOWN - (Date.now() - Number(store.get("lastWish") || 0)) / 1000);
+    if(spamOn && wait > 0){
+      m.className = "msg err"; m.textContent = "Bitte warte noch " + wait + " Sekunden, bevor du den nächsten Wunsch abschickst.";
+      $("send").disabled = false; return;
+    }
     const r = await fetch(base, {method:"POST", headers:{...hdr(), Prefer:"return=minimal"}, body: JSON.stringify({song, artist: artist || null, name: name || null})});
     if(!r.ok){ if(!(await checkOpen())) return; throw 0; }
     store.set("lastWish", Date.now());
