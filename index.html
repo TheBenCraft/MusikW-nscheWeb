@@ -89,8 +89,18 @@ body.sm{display:block;padding:0;cursor:none;overflow:hidden}
 .sc-qr{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2vh}
 .sc-qr img{width:100%;max-width:28vw;background:#fff;padding:1.2vw;border-radius:1.2vw}
 .sc-cta{font-size:clamp(1.4rem,3vw,3rem);font-weight:800}
-.sc-pause{background:var(--pink);color:var(--bg);padding:.4em .8em;border-radius:12px;font-weight:800;font-size:clamp(1rem,2vw,2rem)}
+.sc-pause{position:fixed;left:50%;bottom:3vh;transform:translateX(-50%);z-index:5;white-space:nowrap;background:var(--pink);color:var(--bg);padding:.4em .8em;border-radius:12px;font-weight:800;font-size:clamp(1rem,2vw,2rem)}
 @media (max-width:800px){#screen{grid-template-columns:1fr}.sc-qr img{max-width:60vw}}
+/* Beamer-Module: QR-Größe und Layout */
+#screen.qs-s{grid-template-columns:1fr minmax(200px,22vw)}
+#screen.qs-s .sc-qr img{max-width:20vw}
+#screen.qs-l{grid-template-columns:1fr minmax(300px,42vw)}
+#screen.qs-l .sc-qr img{max-width:38vw}
+@media (max-width:800px){#screen.qs-s,#screen.qs-l{grid-template-columns:1fr}#screen.qs-s .sc-qr img,#screen.qs-l .sc-qr img{max-width:60vw}}
+#screen.noqr{grid-template-columns:1fr}
+#screen.onlyqr{grid-template-columns:1fr;place-items:center}
+#screen.onlyqr .sc-qr img{max-width:min(62vh,62vw)}
+#screen.onlyqr .sc-cta{font-size:clamp(2rem,5vw,5rem)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .chips .em{font-size:1.4rem;min-width:48px}
 .sc-msg{display:inline-block;background:var(--yellow);color:var(--bg);font-weight:800;font-size:clamp(1.6rem,4.5vw,5rem);line-height:1.1;padding:.25em .6em;border-radius:.4em;margin-bottom:4vh;overflow-wrap:anywhere}
@@ -105,14 +115,14 @@ footer a{color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){#flash.on{animation:pulse .9s ease-in-out 2}li.new{animation:flash 3s ease-out}h1 span{transition:transform .3s}h1:hover span{transform:rotate(2deg)}}
 /* ---- Menü und Kopfzeile (auch am Handy) ---- */
 .bar > span{order:1;flex:1 1 220px}
-.bar > .menuwrap{order:2;margin-left:auto}
+.bar{position:relative}
+.bar .menuwrap{position:static}
+.barbtns{order:2;margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .menu{max-width:calc(100vw - 32px)}
 #admin{width:100%;margin:0 auto}
 #gEmojis button{min-height:48px}
-.viewbar{margin:0 0 14px}
-.menu.left{left:0;right:auto}
 .menu button[aria-checked=true]::before{content:"✓ "}
-.chips .em[aria-pressed=true]{background:var(--yellow);color:var(--bg);border-color:var(--yellow)}
+.chips button[aria-pressed=true]{background:var(--yellow);color:var(--bg);border-color:var(--yellow)}
 #emo{width:min(94vw,460px);max-height:88vh;overflow:auto}
 #emo .two{grid-template-columns:1fr auto;align-items:center}
 /* ---- Desktop-Layout ---- */
@@ -126,7 +136,7 @@ footer a{color:var(--muted)}
   #admin:has(#panel:not(.hide)){max-width:760px}
   #admin:has(#panel.both:not(.hide)){max-width:1400px}
   #panel.both:not(.hide){display:grid;grid-template-columns:minmax(0,1.2fr) minmax(360px,1fr);gap:0 40px;align-items:start}
-  #panel.both > .bar,#panel.both > #status,#panel.both > .viewbar{grid-column:1 / -1}
+  #panel.both > .bar,#panel.both > #status{grid-column:1 / -1}
   #panel.both #pageB{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow:auto;padding-right:8px}
   #panel.both #pageB .sub:first-child{margin-top:0}
   li:hover{background:#292258}
@@ -168,6 +178,15 @@ footer a{color:var(--muted)}
   </div>
   <div id="panel" class="hide">
     <div class="bar"><span id="count"></span>
+      <div class="barbtns">
+      <div class="menuwrap">
+        <button class="ghost" id="viewBtn" aria-haspopup="true" aria-expanded="false">Ansicht: Wünsche ▾</button>
+        <div class="menu hide" id="viewMenu" role="menu">
+          <button role="menuitemradio" id="vW" aria-checked="true">Wünsche</button>
+          <button role="menuitemradio" id="vB" aria-checked="false">Beamer</button>
+          <button role="menuitemradio" id="vBoth" aria-checked="false">Beides: Wünsche und Beamer</button>
+        </div>
+      </div>
       <div class="menuwrap">
         <button class="ghost" id="menuBtn" aria-haspopup="true" aria-expanded="false">Menü ☰</button>
         <div class="menu hide" id="menu" role="menu">
@@ -184,16 +203,9 @@ footer a{color:var(--muted)}
           <button role="menuitem" id="out">Abmelden</button>
         </div>
       </div>
-    </div>
-    <div id="status"></div>
-    <div class="viewbar menuwrap">
-      <button class="ghost" id="viewBtn" aria-haspopup="true" aria-expanded="false">Ansicht: Wünsche ▾</button>
-      <div class="menu left hide" id="viewMenu" role="menu">
-        <button role="menuitemradio" id="vW" aria-checked="true">Wünsche</button>
-        <button role="menuitemradio" id="vB" aria-checked="false">Beamer</button>
-        <button role="menuitemradio" id="vBoth" aria-checked="false">Beides: Wünsche und Beamer</button>
       </div>
     </div>
+    <div id="status"></div>
     <div id="pageW">
       <input id="search" type="search" placeholder="Suchen nach Titel, Interpret oder Name" aria-label="Wunschliste durchsuchen" autocomplete="off">
       <ul id="list"></ul>
@@ -203,6 +215,14 @@ footer a{color:var(--muted)}
       <ul id="bNow"></ul>
       <h3 class="sub">Als Nächstes</h3>
       <ul id="bNext"></ul>
+      <h3 class="sub">Beamer-Anzeige</h3>
+      <div class="chips" id="scPresets"></div>
+      <div class="s">Das soll auf dem Beamer zu sehen sein</div>
+      <div class="chips" id="scModules"></div>
+      <div class="s">Größe des QR-Codes</div>
+      <div class="chips" id="scQrSize"></div>
+      <div class="s">Anzahl der nächsten Titel</div>
+      <div class="chips" id="scNextCount"></div>
       <h3 class="sub">Meldung auf dem Beamer</h3>
       <div class="chips" id="mPresets"></div>
       <input id="msgText" maxlength="120" placeholder="Eigener Text" aria-label="Meldung für den Beamer">
@@ -224,7 +244,7 @@ footer a{color:var(--muted)}
 <footer><a href="impressum.html">Impressum</a> &nbsp; <a href="datenschutz.html">Datenschutz</a></footer>
 </main>
 <section id="screen" class="hide" aria-live="polite">
-  <div>
+  <div id="scLeft">
     <div class="sc-msg hide" id="scMsg"></div>
     <div id="scNowBlock">
       <div class="sc-label" id="scNowL">Jetzt läuft</div>
@@ -233,11 +253,11 @@ footer a{color:var(--muted)}
     <div class="sc-label sc-next-l hide" id="scNextL">Als Nächstes</div>
     <div id="scNext"></div>
   </div>
-  <aside class="sc-qr">
+  <aside class="sc-qr" id="scAside">
     <img id="scQr" src="qr.png" alt="QR-Code zum Wünschen">
     <div class="sc-cta">Wünsch dir was!</div>
-    <div class="sc-pause hide" id="scPause">Wünsche sind gerade pausiert</div>
   </aside>
+  <div class="sc-pause hide" id="scPause">Wünsche sind gerade pausiert</div>
 </section>
 <dialog id="wipe" aria-labelledby="wt">
   <h2 id="wt">Alle Wünsche löschen?</h2>
@@ -264,7 +284,6 @@ footer a{color:var(--muted)}
 </dialog>
 <div id="flash"></div>
 <script>
-
 // ===== Hier eintragen (Supabase: Project Settings > API) =====
 const SUPABASE_URL = "https://yrewxcoulmmobpdjmzxb.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyZXd4Y291bG1tb2JwZGptenhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzMDI2ODIsImV4cCI6MjEwODg3ODY4Mn0.ofJbAC4mw9gyxMWq5exFtkcXGtMCTRr1ByHNn_VbjOU";
@@ -283,6 +302,14 @@ function applySettings(j){ // true, wenn sich die Emoji-Einstellungen geändert 
   const changed = ng !== guestEmojis || nl.join(" ") !== emojiList.join(" ");
   guestEmojis = ng; emojiList = nl; return changed;
 }
+const DEFAULT_SCREEN = {now: true, next: true, qr: true, msg: true, pause: true, qrSize: "m", nextCount: 5};
+function cfgFrom(o){
+  const c = Object.assign({}, DEFAULT_SCREEN, o && typeof o === "object" ? o : {});
+  c.nextCount = [3, 5, 8].includes(Number(c.nextCount)) ? Number(c.nextCount) : 5;
+  if(!["s", "m", "l"].includes(c.qrSize)) c.qrSize = "m";
+  return c;
+}
+let admCfg = cfgFrom(null);
 let adminMail = "", knownIds = null, soundOn = true, audioCtx = null, wakeLock = null, isOpen = true, spamOn = true;
 
 function route(){
@@ -538,6 +565,7 @@ function bItem(title, sub, btns, cls){
 }
 function renderBeamer(){
   if($("pageB").classList.contains("hide")) return;
+  paintScreenControls();
   $("msgNow").textContent = curMsg ? "Aktuell auf dem Beamer: " + curMsg : "Aktuell ist keine Meldung eingestellt.";
   const label = x => x.song + (x.artist ? " – " + x.artist : "");
   const now = screenRows.find(x => x.kind === "now"), next = screenRows.filter(x => x.kind === "next");
@@ -592,6 +620,28 @@ function paintBurstRow(){
 }
 paintBurstRow();
 
+// Beamer-Anzeige: Module ein/aus, QR-Größe, Anzahl nächster Titel
+const SCREEN_MODULES = [["now", "Läuft jetzt"], ["next", "Als Nächstes"], ["qr", "QR-Code"], ["msg", "Meldung"], ["pause", "Pausen-Hinweis"]];
+const SCREEN_PRESETS = [
+  ["Alles", {now: true, next: true, qr: true, msg: true, pause: true}],
+  ["Nur QR-Code", {now: false, next: false, qr: true, msg: false, pause: true}],
+  ["Ohne QR-Code", {now: true, next: true, qr: false, msg: true, pause: true}],
+  ["Nur Läuft jetzt", {now: true, next: false, qr: false, msg: true, pause: true}]
+];
+async function saveCfg(c){ admCfg = c; paintScreenControls(); try{ await setSettings({screen_config: c}); }catch(e){} load(); }
+function cfgBtn(label, pressed, fn){
+  const b = document.createElement("button"); b.className = "ghost"; b.textContent = label;
+  if(pressed !== null) b.setAttribute("aria-pressed", pressed);
+  b.onclick = fn; return b;
+}
+function paintScreenControls(){
+  const c = admCfg, fill = (id, btns) => { const box = $(id); box.textContent = ""; btns.forEach(b => box.append(b)); };
+  fill("scPresets", SCREEN_PRESETS.map(([l, v]) => cfgBtn(l, null, () => saveCfg({...c, ...v}))));
+  fill("scModules", SCREEN_MODULES.map(([k, l]) => cfgBtn(l, !!c[k], () => saveCfg({...c, [k]: !c[k]}))));
+  fill("scQrSize", [["s", "Klein"], ["m", "Mittel"], ["l", "Groß"]].map(([k, l]) => cfgBtn(l, c.qrSize === k, () => saveCfg({...c, qrSize: k}))));
+  fill("scNextCount", [3, 5, 8].map(n => cfgBtn(n + " Titel", c.nextCount === n, () => saveCfg({...c, nextCount: n}))));
+}
+
 // Gäste-Emojis ein/aus und erlaubte Emojis festlegen
 $("gem").onclick = async () => { await setSettings({guest_emojis: !guestEmojis}); load(); };
 let emoSel = [];
@@ -631,15 +681,27 @@ async function wakeScreen(){
 }
 function startScreen(){ if(screenTimer) return; refreshScreen(); screenTimer = setInterval(refreshScreen, 3000); wakeScreen(); }
 function stopScreen(){ clearInterval(screenTimer); screenTimer = null; lastBurst = undefined; }
-let scNowItem = null, scMsgText = "";
+let scNowItem = null, scNextItems = [], scMsgText = "", scPaused = false, scCfg = cfgFrom(null);
 const scAdd = (el, it) => { el.append(it.song); if(it.artist){ const sm = document.createElement("small"); sm.textContent = it.artist; el.append(sm); } };
 function paintScreen(){
-  const has = !!scNowItem;
-  $("scMsg").textContent = scMsgText; $("scMsg").classList.toggle("hide", !scMsgText);
-  $("scNowBlock").classList.toggle("hide", !has && !!scMsgText);
+  const c = scCfg, has = !!scNowItem, msg = c.msg ? scMsgText : "";
+  const next = c.next ? scNextItems.slice(0, c.nextCount) : [];
+  $("scMsg").textContent = msg; $("scMsg").classList.toggle("hide", !msg);
+  $("scNowBlock").classList.toggle("hide", !c.now || (!has && !!msg));
   $("scNowL").classList.toggle("hide", !has);
   $("scNow").textContent = "";
-  if(has) scAdd($("scNow"), scNowItem); else if(!scMsgText) $("scNow").textContent = "Gleich geht’s los";
+  if(has) scAdd($("scNow"), scNowItem); else if(c.now && !msg) $("scNow").textContent = "Gleich geht’s los";
+  $("scNext").textContent = "";
+  next.forEach(it => { const d = document.createElement("div"); d.className = "sc-item"; scAdd(d, it); $("scNext").append(d); });
+  $("scNextL").classList.toggle("hide", !next.length);
+  $("scPause").classList.toggle("hide", !(c.pause && scPaused));
+  const leftHas = !!msg || !$("scNowBlock").classList.contains("hide") || next.length > 0;
+  const sc = $("screen");
+  sc.classList.toggle("noqr", !c.qr);
+  sc.classList.toggle("onlyqr", c.qr && !leftHas);
+  ["s", "m", "l"].forEach(z => sc.classList.toggle("qs-" + z, c.qrSize === z));
+  $("scLeft").classList.toggle("hide", !leftHas);
+  $("scAside").classList.toggle("hide", !c.qr);
 }
 function spawnEmoji(e){
   if(!e) return;
@@ -661,10 +723,7 @@ async function refreshScreen(){
     if(r.ok){
       const rows = await r.json();
       scNowItem = rows.find(x => x.kind === "now") || null;
-      const next = rows.filter(x => x.kind === "next").slice(0, 5);
-      $("scNext").textContent = "";
-      next.forEach(it => { const d = document.createElement("div"); d.className = "sc-item"; scAdd(d, it); $("scNext").append(d); });
-      $("scNextL").classList.toggle("hide", !next.length);
+      scNextItems = rows.filter(x => x.kind === "next");
       paintScreen();
     }
   }catch(e){}
@@ -672,8 +731,8 @@ async function refreshScreen(){
     const r = await fetch(SUPABASE_URL + "/rest/v1/settings?select=*&id=eq.1", {headers: hdr()});
     const j = await r.json();
     if(j[0]){
-      $("scPause").classList.toggle("hide", j[0].open !== false);
-      scMsgText = (j[0].screen_message || "").trim(); paintScreen();
+      scPaused = j[0].open === false;
+      scMsgText = (j[0].screen_message || "").trim(); scCfg = cfgFrom(j[0].screen_config); paintScreen();
       const bt = j[0].burst_at || null;
       if(lastBurst === undefined) lastBurst = bt;
       else if(bt && bt !== lastBurst){ lastBurst = bt; spawnEmoji(j[0].burst); }
@@ -723,7 +782,7 @@ async function load(){
   lastRows = rows;
   try{
     const sr = await fetch(SUPABASE_URL + "/rest/v1/settings?select=*&id=eq.1", {headers: hdr(token)});
-    if(sr.ok){ const sj = await sr.json(); if(sj[0]){ isOpen = sj[0].open; spamOn = sj[0].spam_schutz !== false; curMsg = sj[0].screen_message || ""; if(applySettings(sj[0])) paintBurstRow(); } }
+    if(sr.ok){ const sj = await sr.json(); if(sj[0]){ isOpen = sj[0].open; spamOn = sj[0].spam_schutz !== false; curMsg = sj[0].screen_message || ""; if(applySettings(sj[0])) paintBurstRow(); admCfg = cfgFrom(sj[0].screen_config); } }
   }catch(e){}
   updateOpenBtn();
   try{
