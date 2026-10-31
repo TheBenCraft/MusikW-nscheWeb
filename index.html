@@ -49,6 +49,16 @@ li > div:first-child{flex:1 1 200px}
 #panel .t{font-size:1.25rem}
 #flash{position:fixed;inset:0;pointer-events:none;background:var(--yellow);opacity:0;z-index:50}
 @keyframes pulse{0%,100%{opacity:0}35%{opacity:.18}}
+.menu button.danger{color:var(--pink)}
+input[type=checkbox]{width:auto;margin:0}
+label.chk{display:flex;align-items:center;gap:.6em;font-weight:400;margin:1em 0 0}
+dialog{background:var(--panel);color:var(--text);border:2px solid var(--line);border-radius:14px;padding:20px;width:min(92vw,420px);font-family:inherit}
+dialog::backdrop{background:rgba(0,0,0,.65)}
+dialog h2{margin:0 0 .4em}
+dialog p{margin:0 0 .5em}
+.wbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:1em}
+button.solid{background:var(--pink);color:var(--bg)}
+#search{margin-bottom:12px}
 footer{margin-top:2.5em;font-size:.85rem;color:var(--muted)}
 footer a{color:var(--muted)}
 @keyframes flash{0%,60%{box-shadow:0 0 0 4px var(--yellow)}100%{box-shadow:0 0 0 0 transparent}}
@@ -94,17 +104,28 @@ footer a{color:var(--muted)}
           <button role="menuitem" id="hide" aria-pressed="false">Gespielte ausblenden</button>
           <button role="menuitem" id="csv">Excel-Export</button>
           <button role="menuitem" id="reload">Aktualisieren</button>
+          <button role="menuitem" id="wipeBtn" class="danger">Alle Wünsche löschen …</button>
           <button role="menuitem" id="out">Abmelden</button>
         </div>
       </div>
     </div>
     <div id="status"></div>
+    <input id="search" type="search" placeholder="Suchen nach Titel, Interpret oder Name" aria-label="Wunschliste durchsuchen" autocomplete="off">
     <ul id="list"></ul>
   </div>
 </section>
 
 <footer><a href="impressum.html">Impressum</a> &nbsp; <a href="datenschutz.html">Datenschutz</a></footer>
 </main>
+<dialog id="wipe" aria-labelledby="wt">
+  <h2 id="wt">Alle Wünsche löschen?</h2>
+  <p>Damit werden alle Wünsche endgültig entfernt. Das lässt sich nicht rückgängig machen.</p>
+  <label class="chk"><input type="checkbox" id="wbackup" checked> Vorher als Excel-Datei sichern</label>
+  <label for="wpw">Passwort zur Bestätigung</label>
+  <input id="wpw" type="password" autocomplete="current-password">
+  <div class="msg err" id="wmsg" role="status"></div>
+  <div class="wbtns"><button class="ghost" id="wcancel">Abbrechen</button><button class="solid" id="wgo">Endgültig löschen</button></div>
+</dialog>
 <div id="flash"></div>
 <script>
 // ===== Hier eintragen (Supabase: Project Settings > API) =====
@@ -116,7 +137,7 @@ const $ = id => document.getElementById(id);
 const base = SUPABASE_URL + "/rest/v1/wishes";
 const hdr = tok => ({apikey: SUPABASE_KEY, Authorization: "Bearer " + (tok || SUPABASE_KEY), "Content-Type": "application/json"});
 let token = null, timer = null, lastRows = [], hideDone = false;
-let knownIds = null, soundOn = true, audioCtx = null, wakeLock = null, isOpen = true, spamOn = true;
+let adminMail = "", knownIds = null, soundOn = true, audioCtx = null, wakeLock = null, isOpen = true, spamOn = true;
 
 function route(){
   const isAdmin = location.hash === "#admin";
@@ -172,13 +193,14 @@ $("go").onclick = async () => {
     const r = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", {method:"POST", headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"}, body: JSON.stringify({email:$("mail").value.trim(), password:$("pw").value})});
     if(!r.ok) throw 0;
     token = (await r.json()).access_token;
+    adminMail = $("mail").value.trim();
     $("pw").value = "";
     $("login").classList.add("hide"); $("panel").classList.remove("hide");
     try{ audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
     requestWake(); load(); timer = setInterval(load, 8000);
   }catch(e){ $("lmsg").textContent = "Anmeldung fehlgeschlagen. Prüfe E-Mail und Passwort."; }
 };
-$("out").onclick = () => { token = null; clearInterval(timer); knownIds = null; try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; $("panel").classList.add("hide"); $("login").classList.remove("hide"); $("list").textContent = ""; };
+$("out").onclick = () => { token = null; clearInterval(timer); knownIds = null; $("search").value = ""; try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; $("panel").classList.add("hide"); $("login").classList.remove("hide"); $("list").textContent = ""; };
 $("reload").onclick = () => load();
 $("hide").onclick = () => {
   hideDone = !hideDone;
@@ -231,6 +253,25 @@ $("spam").onclick = async () => {
   await fetch(SUPABASE_URL + "/rest/v1/settings?id=eq.1", {method:"PATCH", headers: hdr(token), body: JSON.stringify({spam_schutz: !spamOn})});
   load();
 };
+$("wipeBtn").onclick = () => { $("wpw").value = ""; $("wmsg").textContent = ""; $("wipe").showModal(); $("wpw").focus(); };
+$("wcancel").onclick = () => $("wipe").close();
+$("wpw").addEventListener("keydown", e => { if(e.key === "Enter") $("wgo").click(); });
+$("wgo").onclick = async () => {
+  const pw = $("wpw").value;
+  if(!pw){ $("wmsg").textContent = "Bitte gib dein Passwort ein."; return; }
+  $("wgo").disabled = true; $("wmsg").textContent = "";
+  try{
+    const a = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", {method:"POST", headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"}, body: JSON.stringify({email: adminMail, password: pw})});
+    if(!a.ok){ $("wmsg").textContent = "Das Passwort ist falsch."; return; }
+    if($("wbackup").checked && lastRows.length) $("csv").onclick();
+    const d = await fetch(base + "?id=gte.0", {method:"DELETE", headers: hdr(token)});
+    if(!d.ok) throw 0;
+    $("wipe").close(); load();
+  }catch(e){ $("wmsg").textContent = "Das hat nicht geklappt. Versuch es noch einmal."; }
+  finally{ $("wgo").disabled = false; $("wpw").value = ""; }
+};
+let searchTimer;
+$("search").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(load, 250); });
 function closeMenu(){ $("menu").classList.add("hide"); $("menuBtn").setAttribute("aria-expanded", "false"); }
 $("menuBtn").onclick = e => {
   e.stopPropagation();
@@ -273,8 +314,10 @@ async function load(){
   const open = list.filter(g => g.some(x => !x.done)).length;
   $("count").textContent = open + " Lieder offen, " + list.length + " Lieder, " + rows.length + " Wünsche";
   const ul = $("list"); ul.textContent = "";
-  const shown = hideDone ? list.filter(g => g.some(x => !x.done)) : list;
-  if(!shown.length){ const e = document.createElement("li"); e.textContent = "Keine offenen Wünsche."; ul.append(e); }
+  const q = norm($("search").value);
+  let shown = hideDone ? list.filter(g => g.some(x => !x.done)) : list;
+  if(q) shown = shown.filter(g => g.some(x => norm([x.song, x.artist, x.name].join(" ")).includes(q)));
+  if(!shown.length){ const e = document.createElement("li"); e.textContent = q ? "Keine Treffer." : "Keine offenen Wünsche."; ul.append(e); }
   shown.forEach(g => {
     const w = g[0], n = g.length, done = g.every(x => x.done);
     const ids = "(" + g.map(x => x.id).join(",") + ")";
