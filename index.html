@@ -82,10 +82,11 @@ body.sm{display:block;padding:0;cursor:none;overflow:hidden}
 #screen.hide{display:none}
 .sc-label{font-size:clamp(1rem,2.2vw,2rem);text-transform:uppercase;letter-spacing:.12em;color:var(--yellow);font-weight:800}
 .sc-now{font-size:clamp(2rem,6.5vw,7rem);font-weight:800;line-height:1.05;margin:.2em 0 .1em;overflow-wrap:anywhere}
-.sc-now small{display:block;margin-top:.5em;font-size:.5em;font-weight:400;color:#d9d2f5}
+.sc-now small{display:inline;margin-left:.7em;font-size:.5em;font-weight:400;color:#d9d2f5}
 .sc-next-l{margin-top:6vh;color:var(--pink)}
 .sc-item{font-size:clamp(1.2rem,3.4vw,3.4rem);font-weight:700;margin:.35em 0;overflow-wrap:anywhere}
-.sc-item small{display:block;margin-top:.3em;font-weight:400;color:#d9d2f5}
+.sc-item small{display:inline;margin-left:.6em;font-weight:400;color:#d9d2f5}
+.sc-now small::before,.sc-item small::before{content:"– "}
 .sc-qr{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2vh}
 .sc-qr img{width:100%;max-width:28vw;background:#fff;padding:1.2vw;border-radius:1.2vw}
 .sc-cta{font-size:clamp(1.4rem,3vw,3rem);font-weight:800}
