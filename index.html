@@ -102,14 +102,13 @@ body.sm{display:block;padding:0;cursor:none;overflow:hidden}
 #screen.onlyqr .sc-qr img{max-width:min(62vh,62vw)}
 #screen.onlyqr .sc-cta{font-size:clamp(2rem,5vw,5rem)}
 .sc-qr.hide{display:none}
-/* Meldung groß und mittig */
-#screen.msgfull{grid-template-columns:1fr;place-items:center;text-align:center}
-#screen.msgfull #scLeft{width:100%}
-#screen.msgfull #scNowBlock,#screen.msgfull #scNextL,#screen.msgfull #scNext,#screen.msgfull #scAside{display:none}
-#screen.msgfull .sc-msg{font-size:clamp(2.5rem,9vw,11rem);margin:0;padding:.4em .8em}
+/* Meldung groß: liegt über allem, der Rest bleibt leicht sichtbar */
+#scOverlay{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;text-align:center;padding:6vw;background:rgba(255,93,143,.86);background:color-mix(in srgb,var(--pink) 86%,transparent);color:var(--bg)}
+#scOverlay.hide{display:none}
+#scOverlayText{font-size:clamp(2.5rem,9vw,11rem);font-weight:800;line-height:1.05;overflow-wrap:anywhere;text-shadow:0 .04em .12em rgba(0,0,0,.18)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .chips .em{font-size:1.4rem;min-width:48px}
-.sc-msg{display:inline-block;background:var(--yellow);color:var(--bg);font-weight:800;font-size:clamp(1.6rem,4.5vw,5rem);line-height:1.1;padding:.25em .6em;border-radius:.4em;margin-bottom:4vh;overflow-wrap:anywhere}
+.sc-msg{display:inline-block;background:var(--pink);color:var(--bg);font-weight:800;font-size:clamp(1.6rem,4.5vw,5rem);line-height:1.1;padding:.25em .6em;border-radius:.4em;margin-bottom:4vh;overflow-wrap:anywhere}
 .sc-msg.hide{display:none}
 .emo{position:fixed;bottom:-10vh;font-size:clamp(2rem,6vw,6rem);pointer-events:none;z-index:60;animation:rise var(--d,4s) ease-in forwards}
 @keyframes rise{0%{transform:translateY(0) rotate(0);opacity:0}10%{opacity:1}100%{transform:translateY(-120vh) rotate(var(--r,20deg));opacity:0}}
@@ -161,9 +160,69 @@ footer a{color:var(--muted)}
   #panel.both #pageB .sub:first-child{margin-top:0}
   li:hover{background:#292258}
 }
+/* ---- Themen und Animationen ---- */
+body[data-theme="geburtstag"]{--pink:#ff4f9a;--yellow:#ffd447;--bg:#1a1040;--panel:#2a1a5e;--line:#4b3a96}
+body[data-theme="halloween"]{--pink:#ff7a1a;--yellow:#b277ff;--bg:#120b1f;--panel:#1f1433;--line:#3d2b60}
+body[data-theme="weihnachten"]{--pink:#e5383b;--yellow:#7ddc8a;--bg:#0b1d2a;--panel:#12303f;--line:#26536a}
+body[data-theme="silvester"]{--pink:#ffcf40;--yellow:#7fd7ff;--bg:#0a0d24;--panel:#141a40;--line:#2c3770}
+body[data-theme="hochzeit"]{--pink:#ff8fb1;--yellow:#ffe3a3;--bg:#2a1630;--panel:#3a2142;--line:#5c3d68}
+body[data-theme="sommer"]{--pink:#ff6b57;--yellow:#ffd23f;--bg:#0f2b3d;--panel:#173d55;--line:#2b5f7e}
+#fx{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.fx{position:absolute;top:0;left:var(--x);font-size:var(--s);opacity:.5;will-change:transform;animation-duration:var(--d);animation-delay:var(--dl);animation-timing-function:linear;animation-iteration-count:infinite}
+@keyframes fxfall{0%{transform:translate3d(0,-12vh,0) rotate(0)}100%{transform:translate3d(var(--dx),112vh,0) rotate(var(--r))}}
+@keyframes fxrise{0%{transform:translate3d(0,108vh,0) rotate(0)}100%{transform:translate3d(var(--dx),-14vh,0) rotate(var(--r))}}
+main{position:relative;z-index:1}
+#screen{position:relative;z-index:1;background:transparent}
+body.sm{background:linear-gradient(135deg,var(--bg),var(--panel) 50%,var(--bg));background-size:300% 300%}
+.eq{display:inline-flex;align-items:flex-end;gap:.12em;height:.9em;margin-left:.5em;vertical-align:middle}
+.eq i{display:block;width:.2em;height:100%;background:var(--yellow);border-radius:2px;transform-origin:bottom}
+.toprow{margin:0 0 12px}
+.hscroll{max-height:240px;overflow:auto;padding-right:6px}
+@keyframes eq{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+@keyframes pop{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+@keyframes slidein{0%{transform:translateX(-6vw);opacity:0}100%{transform:none;opacity:1}}
+@keyframes ovin{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.04);opacity:1}100%{transform:scale(1)}}
+@keyframes ovpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+@keyframes bgmove{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes qrglow{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,212,71,0)}50%{transform:scale(1.035);box-shadow:0 0 4vw 0 rgba(255,212,71,.45)}}
+@keyframes up{0%{transform:translateY(14px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes wob{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg) scale(1.03)}}
+@keyframes liin{0%{transform:translateX(-18px);opacity:0}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion:no-preference){
+  body.sm{animation:bgmove 24s ease-in-out infinite}
+  .eq i{animation:eq 1s ease-in-out infinite}
+  .eq i:nth-child(2){animation-delay:.2s}
+  .eq i:nth-child(3){animation-delay:.45s}
+  .eq i:nth-child(4){animation-delay:.1s}
+  #scNow.pop{animation:pop .7s cubic-bezier(.2,1.4,.4,1)}
+  .sc-item{animation:slidein .6s ease-out both}
+  .sc-qr img{animation:qrglow 3.2s ease-in-out infinite}
+  #scOverlay:not(.hide){animation:ovpulse 4s ease-in-out infinite}
+  #scOverlayText.ovin{animation:ovin .7s cubic-bezier(.2,1.3,.4,1)}
+  #guest > div > *{animation:up .55s ease-out both}
+  #guest > div > :nth-child(1){animation-delay:0.05s}
+  #guest > div > :nth-child(2){animation-delay:0.10s}
+  #guest > div > :nth-child(3){animation-delay:0.15s}
+  #guest > div > :nth-child(4){animation-delay:0.20s}
+  #guest > div > :nth-child(5){animation-delay:0.25s}
+  #guest > div > :nth-child(6){animation-delay:0.30s}
+  #guest > div > :nth-child(7){animation-delay:0.35s}
+  #guest > div > :nth-child(8){animation-delay:0.40s}
+  #guest > div > :nth-child(9){animation-delay:0.45s}
+  #guest > div > :nth-child(10){animation-delay:0.50s}
+  h1 span{animation:wob 5s ease-in-out infinite}
+  .chips .em{transition:transform .12s}
+  .chips .em:hover{transform:translateY(-3px) scale(1.12)}
+  .chips .em:active{transform:scale(1.3)}
+  button.main{transition:transform .12s,box-shadow .12s}
+  button.main:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  button.main:active{transform:scale(.98)}
+  li.new{animation:flash 3s ease-out,liin .45s ease-out}
+}
 </style>
 </head>
 <body>
+<div id="fx" aria-hidden="true"></div>
 <main id="page">
 
 <section id="guest">
@@ -221,10 +280,12 @@ footer a{color:var(--muted)}
     </div>
     <div id="status"></div>
     <div id="pageW">
+      <div class="toprow"><button class="ghost openScreen">Beamer-Ansicht öffnen ↗</button></div>
       <input id="search" type="search" placeholder="Suchen nach Titel, Interpret oder Name" aria-label="Wunschliste durchsuchen" autocomplete="off">
       <ul id="list"></ul>
     </div>
     <div id="pageB" class="hide">
+      <div class="toprow"><button class="ghost openScreen">Beamer-Ansicht öffnen ↗</button></div>
       <h3 class="sub">Läuft jetzt</h3>
       <ul id="bNow"></ul>
       <h3 class="sub">Als Nächstes</h3>
@@ -243,7 +304,6 @@ footer a{color:var(--muted)}
       <h3 class="sub">Wünsche auswählen</h3>
       <input id="bsearch" type="search" placeholder="Wünsche durchsuchen" aria-label="Wünsche durchsuchen" autocomplete="off">
       <ul id="bWishes"></ul>
-      <p><button class="ghost" id="openScreen">Beamer-Ansicht öffnen</button></p>
     </div>
   </div>
 </section>
@@ -254,7 +314,7 @@ footer a{color:var(--muted)}
   <div id="scLeft">
     <div class="sc-msg hide" id="scMsg"></div>
     <div id="scNowBlock">
-      <div class="sc-label" id="scNowL">Jetzt läuft</div>
+      <div class="sc-label" id="scNowL">Jetzt läuft <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
       <div class="sc-now" id="scNow"></div>
     </div>
     <div class="sc-label sc-next-l hide" id="scNextL">Als Nächstes</div>
@@ -265,6 +325,7 @@ footer a{color:var(--muted)}
     <div class="sc-cta">Wünsch dir was!</div>
   </aside>
   <div class="sc-pause hide" id="scPause">Wünsche sind gerade pausiert</div>
+  <div id="scOverlay" class="hide" role="alert"><div id="scOverlayText"></div></div>
 </section>
 <dialog id="wipe" aria-labelledby="wt">
   <h2 id="wt">Alle Wünsche löschen?</h2>
@@ -301,6 +362,12 @@ footer a{color:var(--muted)}
     <div class="chips" id="scQrSize"></div>
     <div class="s">Anzahl der nächsten Titel</div>
     <div class="chips" id="scNextCount"></div>
+  </section>
+
+  <section class="setsec">
+    <h3>Event-Thema</h3>
+    <div class="s">Farben und Animationen auf der Wunschseite und dem Beamer</div>
+    <div class="chips" id="themeRow"></div>
   </section>
 
   <section class="setsec">
@@ -351,6 +418,40 @@ function cfgFrom(o){
   return c;
 }
 let admCfg = cfgFrom(null);
+const THEMES = {
+  standard: {label: "🎵 Standard", fx: ["🎵", "🎶", "🎤", "🎧"], mode: "rise"},
+  ruhig: {label: "Ruhig (ohne Animation)", fx: [], mode: "rise"},
+  geburtstag: {label: "🎈 Geburtstag", fx: ["🎈", "🎉", "🎂", "🎁", "🥳"], mode: "rise"},
+  halloween: {label: "🎃 Halloween", fx: ["🎃", "🦇", "👻", "🕸️", "🍬"], mode: "fall"},
+  weihnachten: {label: "🎄 Weihnachten", fx: ["❄️", "🎄", "⭐", "🎁"], mode: "fall"},
+  silvester: {label: "🎆 Silvester", fx: ["✨", "🎆", "🥂", "🎇"], mode: "rise"},
+  hochzeit: {label: "💕 Hochzeit", fx: ["💕", "🤍", "🌸", "💍"], mode: "rise"},
+  sommer: {label: "🌴 Sommer", fx: ["☀️", "🌴", "🍹", "🏖️", "🍉"], mode: "rise"}
+};
+let themeKey = null, admTheme = "standard";
+function buildFx(){
+  const box = $("fx"); box.textContent = "";
+  const t = THEMES[themeKey];
+  if(!t || !t.fx.length || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+  const big = location.hash === "#screen", n = big ? 18 : 14, r = Math.random;
+  for(let i = 0; i < n; i++){
+    const e = document.createElement("div"); e.className = "fx"; e.textContent = t.fx[i % t.fx.length];
+    e.style.animationName = t.mode === "fall" ? "fxfall" : "fxrise";
+    e.style.setProperty("--x", (r() * 96) + "%");
+    e.style.setProperty("--s", ((big ? 2.4 : 1.5) + r() * (big ? 3 : 1.8)) + "rem");
+    e.style.setProperty("--d", (10 + r() * 12) + "s");
+    e.style.setProperty("--dl", (-r() * 20) + "s");
+    e.style.setProperty("--dx", (r() * 24 - 12) + "vw");
+    e.style.setProperty("--r", (r() * 480 - 240) + "deg");
+    box.append(e);
+  }
+}
+function applyTheme(key){
+  if(location.hash === "#admin") return;
+  if(!THEMES[key]) key = "standard";
+  if(key === themeKey) return;
+  themeKey = key; document.body.dataset.theme = key; buildFx();
+}
 let adminMail = "", knownIds = null, soundOn = true, audioCtx = null, wakeLock = null, isOpen = true, spamOn = true;
 
 function route(){
@@ -361,6 +462,8 @@ function route(){
   $("guest").classList.toggle("hide", h === "#admin");
   $("admin").classList.toggle("hide", h !== "#admin");
   if(h === "#screen") startScreen(); else stopScreen();
+  if(h === "#admin"){ themeKey = null; delete document.body.dataset.theme; $("fx").textContent = ""; }
+  else if(themeKey) buildFx();
 }
 addEventListener("hashchange", route);
 
@@ -370,15 +473,22 @@ const store = {
   get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
   set(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
 };
+let wasClosed = false;
 function closedUI(){
+  wasClosed = true;
   ["song","artist","name","send"].forEach(id => $(id).disabled = true);
   $("gmsg").className = "msg err"; $("gmsg").textContent = "Wünsche sind gerade pausiert.";
+}
+function openUI(){
+  wasClosed = false;
+  ["song","artist","name","send"].forEach(id => $(id).disabled = false);
+  $("gmsg").className = "msg"; $("gmsg").textContent = "";
 }
 async function checkOpen(){
   try{
     const r = await fetch(SUPABASE_URL + "/rest/v1/settings?select=*&id=eq.1", {headers: hdr()});
     const j = await r.json();
-    if(j[0]){ spamOn = j[0].spam_schutz !== false; if(applySettings(j[0]) || !guestPainted) paintGuestEmojis(); if(j[0].open === false){ closedUI(); return false; } }
+    if(j[0]){ spamOn = j[0].spam_schutz !== false; applyTheme(j[0].theme); if(applySettings(j[0]) || !guestPainted) paintGuestEmojis(); if(j[0].open === false){ closedUI(); return false; } if(wasClosed) openUI(); }
   }catch(e){}
   return true;
 }
@@ -393,7 +503,7 @@ async function guestEmoji(em){
     const r = await fetch(SUPABASE_URL + "/rest/v1/rpc/send_emoji", {method:"POST", headers: hdr(), body: JSON.stringify({e: em})});
     if(!r.ok) throw 0;
     store.set("lastEmoji", Date.now());
-    m.className = "msg ok"; m.textContent = "Dein Emoji ist unterwegs!";
+    m.className = "msg ok"; m.textContent = "Dein Emoji ist unterwegs!"; guestBurst(em, 8);
   }catch(e){ m.className = "msg err"; m.textContent = "Das hat nicht geklappt. Versuch es gleich noch einmal."; }
 }
 function paintGuestEmojis(){
@@ -407,7 +517,9 @@ function paintGuestEmojis(){
     b.onclick = () => guestEmoji(em); box.append(b);
   });
 }
+function guestBurst(e, n){ const x = e || (THEMES[themeKey] || THEMES.standard).fx[0]; if(x) spawnEmoji(x, n); }
 checkOpen();
+setInterval(() => { if(!["#admin", "#screen"].includes(location.hash) && !document.hidden) checkOpen(); }, 20000);
 $("send").onclick = async () => {
   const song = $("song").value.trim(), artist = $("artist").value.trim(), name = $("name").value.trim();
   const m = $("gmsg");
@@ -424,7 +536,7 @@ $("send").onclick = async () => {
     if(!r.ok){ if(!(await checkOpen())) return; throw 0; }
     store.set("lastWish", Date.now());
     $("song").value = $("artist").value = "";
-    m.className = "msg ok"; m.textContent = "Wunsch ist angekommen. Danke!";
+    m.className = "msg ok"; m.textContent = "Wunsch ist angekommen. Danke!"; guestBurst(null, 10);
   }catch(e){ m.className = "msg err"; m.textContent = "Das hat nicht geklappt. Versuch es gleich noch einmal."; }
   $("send").disabled = false;
 };
@@ -514,19 +626,24 @@ $("wgo").onclick = async () => {
   finally{ $("wgo").disabled = false; $("wpw").value = ""; }
 };
 const normText = t => (t || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+const SLOT = 15 * 60000;
 function computeStats(rows){
   if(!rows.length) return {total: 0};
-  const times = rows.map(w => new Date(w.created_at));
+  const times = rows.map(w => new Date(w.created_at).getTime());
   const first = new Date(Math.min(...times)), last = new Date(Math.max(...times));
-  const hourStart = d => { const x = new Date(d); x.setMinutes(0, 0, 0); return x; };
-  const t0 = hourStart(first).getTime(), slots = [];
-  for(let t = t0; t <= last.getTime(); t += 3600000) slots.push({start: new Date(t), count: 0});
-  times.forEach(d => { const i = Math.floor((hourStart(d).getTime() - t0) / 3600000); if(slots[i]) slots[i].count++; });
+  const q = t => Math.floor(t / SLOT) * SLOT;
+  const t0 = q(first.getTime()), count = new Map();
+  times.forEach(t => { const k = q(t); count.set(k, (count.get(k) || 0) + 1); });
+  const n = Math.floor((q(last.getTime()) - t0) / SLOT) + 1;
+  // bis 24 Stunden alle Viertelstunden zeigen, bei längeren Zeiträumen nur die mit Wünschen
+  const keys = n <= 96 ? Array.from({length: n}, (_, i) => t0 + i * SLOT) : [...count.keys()].sort((x, y) => x - y);
   const multi = first.toDateString() !== last.toDateString();
-  const pad = n => String(n).padStart(2, "0");
-  slots.forEach(sl => {
-    const h = sl.start.getHours();
-    sl.label = (multi ? sl.start.toLocaleDateString("de-DE", {day: "2-digit", month: "2-digit"}) + " " : "") + pad(h) + ":00–" + pad((h + 1) % 24) + ":00";
+  const pad = v => String(v).padStart(2, "0");
+  const hm = d => pad(d.getHours()) + ":" + pad(d.getMinutes());
+  const dm = d => d.toLocaleDateString("de-DE", {day: "2-digit", month: "2-digit"}) + " ";
+  const slots = keys.map(k => {
+    const st = new Date(k), en = new Date(k + SLOT), pre = multi ? dm(st) : "";
+    return {start: st, count: count.get(k) || 0, label: pre + hm(st), range: pre + hm(st) + "–" + hm(en)};
   });
   const songs = new Map();
   rows.forEach(w => {
@@ -535,11 +652,12 @@ function computeStats(rows){
     songs.get(k).count++;
   });
   const top = [...songs.values()].sort((x, y) => y.count - x.count || x.song.localeCompare(y.song, "de")).slice(0, 10);
-  const max = Math.max(...slots.map(x => x.count)), min = Math.min(...slots.map(x => x.count));
-  return {total: rows.length, songs: songs.size, first, last, slots, top, max, min,
-          busiest: slots.filter(x => x.count === max), quietest: slots.filter(x => x.count === min)};
+  const max = Math.max(...slots.map(x => x.count));
+  return {total: rows.length, songs: songs.size, first, last, slots, top, max,
+          busiest: slots.filter(x => x.count === max),
+          span: (multi ? dm(first) : "") + hm(first) + "–" + (multi ? dm(last) : "") + hm(last)};
 }
-const fmtSlots = a => a.slice(0, 3).map(x => x.label).join(", ") + (a.length > 3 ? " …" : "");
+const fmtSlots = a => a.slice(0, 2).map(x => x.range).join(", ") + (a.length > 2 ? " …" : "");
 function renderStats(){
   const st = computeStats(lastRows), body = $("statsBody");
   body.textContent = "";
@@ -550,15 +668,16 @@ function renderStats(){
   const card = (big, small) => { const c = el("div", "card"); c.append(el("b", "", big), el("span", "", small)); cards.append(c); };
   card(String(st.total), "Wünsche gesamt");
   card(String(st.songs), "verschiedene Lieder");
-  card(fmtSlots(st.busiest) + " Uhr", "stärkste Zeit, " + st.max + " Wünsche");
-  if(st.slots.length > 1) card(fmtSlots(st.quietest) + " Uhr", "ruhigste Zeit, " + st.min + " Wünsche");
-  body.append(cards, el("h3", "", "Wünsche pro Stunde"));
+  card(st.span + " Uhr", "Zeitraum");
+  card(fmtSlots(st.busiest) + " Uhr", "stärkste 15 Minuten, " + st.max + " Wünsche");
+  body.append(el("h3", "", "Überblick"), cards, el("h3", "", "Wünsche pro 15 Minuten"));
+  const chart = el("div", "hscroll");
   st.slots.forEach(x => {
     const row = el("div", "hrow"), track = el("div", "htrack"), fill = el("div", "hfill" + (x.count === st.max ? " max" : ""));
     fill.style.width = (st.max ? x.count / st.max * 100 : 0) + "%";
-    track.append(fill); row.append(el("span", "", x.label), track, el("span", "hn", String(x.count))); body.append(row);
+    track.append(fill); row.append(el("span", "", x.label), track, el("span", "hn", String(x.count))); chart.append(row);
   });
-  body.append(el("h3", "", "Meistgewünschte Lieder"));
+  body.append(chart, el("h3", "", "Meistgewünschte Lieder"));
   const ol = el("ol");
   st.top.forEach(x => ol.append(el("li", "", x.song + (x.artist ? " – " + x.artist : "") + " (" + x.count + "×)")));
   body.append(ol);
@@ -570,7 +689,7 @@ $("sexp").onclick = () => {
   downloadCsv("statistik.csv", [
     ["Wünsche gesamt", st.total], ["Verschiedene Lieder", st.songs],
     ["Erster Wunsch", st.first.toLocaleString("de-DE")], ["Letzter Wunsch", st.last.toLocaleString("de-DE")],
-    [], ["Uhrzeit", "Wünsche"], ...st.slots.map(x => [x.label, x.count]),
+    [], ["Zeit (15 Minuten)", "Wünsche"], ...st.slots.map(x => [x.range, x.count]),
     [], ["Titel", "Interpret", "Anzahl"], ...st.top.map(x => [x.song, x.artist, x.count])
   ]);
 };
@@ -679,6 +798,14 @@ function paintScreenControls(){
   fill("scNextCount", [3, 5, 8].map(n => cfgBtn(n + " Titel", c.nextCount === n, () => saveCfg({...c, nextCount: n}))));
 }
 
+function paintThemeControls(){
+  const box = $("themeRow"); box.textContent = "";
+  Object.entries(THEMES).forEach(([k, t]) => box.append(cfgBtn(t.label, admTheme === k, async () => {
+    admTheme = k; paintThemeControls();
+    try{ await setSettings({theme: k}); }catch(e){}
+  })));
+}
+
 // Gäste-Emojis ein/aus und erlaubte Emojis festlegen
 $("gem").onclick = async () => { await setSettings({guest_emojis: !guestEmojis}); load(); };
 let emoSel = [];
@@ -710,7 +837,7 @@ $("emoSave").onclick = async () => {
 };
 $("msgShow").onclick = () => showMsg($("msgText").value.trim());
 $("msgClear").onclick = () => { $("msgText").value = ""; showMsg(""); };
-$("openScreen").onclick = () => window.open(location.href.split("#")[0] + "#screen", "_blank");
+document.querySelectorAll(".openScreen").forEach(b => b.onclick = () => window.open(location.href.split("#")[0] + "#screen", "_blank"));
 
 // ---- Öffentlicher Bildschirm (Beamer) ----
 async function wakeScreen(){
@@ -720,31 +847,46 @@ function startScreen(){ if(screenTimer) return; refreshScreen(); screenTimer = s
 function stopScreen(){ clearInterval(screenTimer); screenTimer = null; lastBurst = undefined; }
 let scNowItem = null, scNextItems = [], scMsgText = "", scPaused = false, scCfg = cfgFrom(null);
 const scAdd = (el, it) => { el.append(it.song); if(it.artist){ const sm = document.createElement("small"); sm.textContent = it.artist; el.append(sm); } };
+let sigNow = null, sigNext = null, sigOv = "";
+function retrigger(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 function paintScreen(){
   const c = scCfg, has = !!scNowItem, msg = c.msg ? scMsgText : "";
+  const big = !!msg && c.msgBig, strip = big ? "" : msg;
   const next = c.next ? scNextItems.slice(0, c.nextCount) : [];
-  $("scMsg").textContent = msg; $("scMsg").classList.toggle("hide", !msg);
-  $("scNowBlock").classList.toggle("hide", !c.now || (!has && !!msg));
+  // Meldung: schmaler Streifen oder großes Overlay über allem
+  $("scMsg").textContent = strip; $("scMsg").classList.toggle("hide", !strip);
+  $("scOverlay").classList.toggle("hide", !big);
+  if(big && msg !== sigOv){ $("scOverlayText").textContent = msg; retrigger($("scOverlayText"), "ovin"); }
+  sigOv = big ? msg : "";
+  // Läuft jetzt (nur neu zeichnen, wenn sich der Titel ändert, damit die Animation nicht ständig neu startet)
+  $("scNowBlock").classList.toggle("hide", !c.now || (!has && !!strip));
   $("scNowL").classList.toggle("hide", !has);
-  $("scNow").textContent = "";
-  if(has) scAdd($("scNow"), scNowItem); else if(c.now && !msg) $("scNow").textContent = "Gleich geht’s los";
-  $("scNext").textContent = "";
-  next.forEach(it => { const d = document.createElement("div"); d.className = "sc-item"; scAdd(d, it); $("scNext").append(d); });
+  const kNow = has ? keyOf(scNowItem.song, scNowItem.artist) : (c.now && !strip ? "#wait" : "");
+  if(kNow !== sigNow){
+    sigNow = kNow; $("scNow").textContent = "";
+    if(has){ scAdd($("scNow"), scNowItem); retrigger($("scNow"), "pop"); }
+    else if(kNow === "#wait") $("scNow").textContent = "Gleich geht’s los";
+  }
+  // Als Nächstes
+  const kNext = next.map(x => keyOf(x.song, x.artist)).join("|");
+  if(kNext !== sigNext){
+    sigNext = kNext; $("scNext").textContent = "";
+    next.forEach((it, i) => { const d = document.createElement("div"); d.className = "sc-item"; d.style.animationDelay = (i * 90) + "ms"; scAdd(d, it); $("scNext").append(d); });
+  }
   $("scNextL").classList.toggle("hide", !next.length);
   $("scPause").classList.toggle("hide", !(c.pause && scPaused));
-  const leftHas = !!msg || !$("scNowBlock").classList.contains("hide") || next.length > 0;
+  const leftHas = !!strip || !$("scNowBlock").classList.contains("hide") || next.length > 0;
   const sc = $("screen");
   sc.classList.toggle("noqr", !c.qr);
   sc.classList.toggle("onlyqr", c.qr && !leftHas);
-  sc.classList.toggle("msgfull", c.msgBig && !!msg);
   ["s", "m", "l"].forEach(z => sc.classList.toggle("qs-" + z, c.qrSize === z));
   $("scLeft").classList.toggle("hide", !leftHas);
   $("scAside").classList.toggle("hide", !c.qr);
 }
-function spawnEmoji(e){
+function spawnEmoji(e, n = 24){
   if(!e) return;
   const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  for(let i = 0; i < (reduce ? 1 : 24); i++){
+  for(let i = 0; i < (reduce ? 1 : n); i++){
     const el = document.createElement("div"); el.className = "emo"; el.textContent = e;
     el.style.left = (reduce ? 45 : 3 + Math.random() * 90) + "vw";
     if(reduce) el.style.bottom = "40vh";
@@ -769,7 +911,7 @@ async function refreshScreen(){
     const r = await fetch(SUPABASE_URL + "/rest/v1/settings?select=*&id=eq.1", {headers: hdr()});
     const j = await r.json();
     if(j[0]){
-      scPaused = j[0].open === false;
+      applyTheme(j[0].theme); scPaused = j[0].open === false;
       scMsgText = (j[0].screen_message || "").trim(); scCfg = cfgFrom(j[0].screen_config); paintScreen();
       const bt = j[0].burst_at || null;
       if(lastBurst === undefined) lastBurst = bt;
@@ -799,7 +941,7 @@ function wireMenu(btn, menu){
   menu.addEventListener("click", e => { if(e.target.closest("button")) closeMenus(); });
 }
 wireMenu($("menuBtn"), $("menu")); wireMenu($("viewBtn"), $("viewMenu"));
-$("setBtn").onclick = () => { paintScreenControls(); $("set").showModal(); };
+$("setBtn").onclick = () => { paintScreenControls(); paintThemeControls(); $("set").showModal(); };
 $("setClose").onclick = () => $("set").close();
 document.addEventListener("click", e => { if(!e.target.closest(".menuwrap")) closeMenus(); });
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeMenus(); });
@@ -822,7 +964,7 @@ async function load(){
   lastRows = rows;
   try{
     const sr = await fetch(SUPABASE_URL + "/rest/v1/settings?select=*&id=eq.1", {headers: hdr(token)});
-    if(sr.ok){ const sj = await sr.json(); if(sj[0]){ isOpen = sj[0].open; spamOn = sj[0].spam_schutz !== false; curMsg = sj[0].screen_message || ""; if(applySettings(sj[0])) paintBurstRow(); admCfg = cfgFrom(sj[0].screen_config); } }
+    if(sr.ok){ const sj = await sr.json(); if(sj[0]){ isOpen = sj[0].open; spamOn = sj[0].spam_schutz !== false; curMsg = sj[0].screen_message || ""; if(applySettings(sj[0])) paintBurstRow(); admCfg = cfgFrom(sj[0].screen_config); admTheme = sj[0].theme || "standard"; } }
   }catch(e){}
   updateOpenBtn();
   try{
