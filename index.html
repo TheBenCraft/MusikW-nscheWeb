@@ -110,6 +110,7 @@ body.sm{display:block;padding:0;cursor:none;overflow:hidden}
 .chips .em{font-size:1.4rem;min-width:48px}
 .sc-msg{display:inline-block;background:var(--pink);color:var(--bg);font-weight:800;font-size:clamp(1.6rem,4.5vw,5rem);line-height:1.1;padding:.25em .6em;border-radius:.4em;margin-bottom:4vh;overflow-wrap:anywhere}
 .sc-msg.hide{display:none}
+.emo.small{font-size:clamp(1.5rem,5vw,2.2rem)}
 .emo{position:fixed;bottom:-10vh;font-size:clamp(2rem,6vw,6rem);pointer-events:none;z-index:60;animation:rise var(--d,4s) ease-in forwards}
 @keyframes rise{0%{transform:translateY(0) rotate(0);opacity:0}10%{opacity:1}100%{transform:translateY(-120vh) rotate(var(--r,20deg));opacity:0}}
 @keyframes fadeemo{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
@@ -168,7 +169,7 @@ body[data-theme="silvester"]{--pink:#ffcf40;--yellow:#7fd7ff;--bg:#0a0d24;--pane
 body[data-theme="hochzeit"]{--pink:#ff8fb1;--yellow:#ffe3a3;--bg:#2a1630;--panel:#3a2142;--line:#5c3d68}
 body[data-theme="sommer"]{--pink:#ff6b57;--yellow:#ffd23f;--bg:#0f2b3d;--panel:#173d55;--line:#2b5f7e}
 #fx{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
-.fx{position:absolute;top:0;left:var(--x);font-size:var(--s);opacity:.5;will-change:transform;animation-duration:var(--d);animation-delay:var(--dl);animation-timing-function:linear;animation-iteration-count:infinite}
+.fx{position:absolute;top:0;left:var(--x);font-size:var(--s);opacity:.28;will-change:transform;animation-duration:var(--d);animation-delay:var(--dl);animation-timing-function:linear;animation-iteration-count:infinite}
 @keyframes fxfall{0%{transform:translate3d(0,-12vh,0) rotate(0)}100%{transform:translate3d(var(--dx),112vh,0) rotate(var(--r))}}
 @keyframes fxrise{0%{transform:translate3d(0,108vh,0) rotate(0)}100%{transform:translate3d(var(--dx),-14vh,0) rotate(var(--r))}}
 main{position:relative;z-index:1}
@@ -176,20 +177,21 @@ main{position:relative;z-index:1}
 body.sm{background:linear-gradient(135deg,var(--bg),var(--panel) 50%,var(--bg));background-size:300% 300%}
 .eq{display:inline-flex;align-items:flex-end;gap:.12em;height:.9em;margin-left:.5em;vertical-align:middle}
 .eq i{display:block;width:.2em;height:100%;background:var(--yellow);border-radius:2px;transform-origin:bottom}
-.toprow{margin:0 0 12px}
+.nextbtn{display:none}
+#panel.both .nextbtn{display:inline-block}
 .hscroll{max-height:240px;overflow:auto;padding-right:6px}
 @keyframes eq{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
-@keyframes pop{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
-@keyframes slidein{0%{transform:translateX(-6vw);opacity:0}100%{transform:none;opacity:1}}
-@keyframes ovin{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.04);opacity:1}100%{transform:scale(1)}}
-@keyframes ovpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+@keyframes pop{0%{transform:scale(.9);opacity:0}60%{transform:scale(1.03);opacity:1}100%{transform:scale(1)}}
+@keyframes slidein{0%{transform:translateX(-3vw);opacity:0}100%{transform:none;opacity:1}}
+@keyframes ovin{0%{transform:scale(.8);opacity:0}70%{transform:scale(1.02);opacity:1}100%{transform:scale(1)}}
+@keyframes ovpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.012)}}
 @keyframes bgmove{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-@keyframes qrglow{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,212,71,0)}50%{transform:scale(1.035);box-shadow:0 0 4vw 0 rgba(255,212,71,.45)}}
-@keyframes up{0%{transform:translateY(14px);opacity:0}100%{transform:none;opacity:1}}
-@keyframes wob{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg) scale(1.03)}}
+@keyframes qrglow{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,212,71,0)}50%{transform:scale(1.015);box-shadow:0 0 2vw 0 rgba(255,212,71,.25)}}
+@keyframes up{0%{transform:translateY(8px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes wob{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg) scale(1.01)}}
 @keyframes liin{0%{transform:translateX(-18px);opacity:0}100%{transform:none;opacity:1}}
 @media (prefers-reduced-motion:no-preference){
-  body.sm{animation:bgmove 24s ease-in-out infinite}
+  body.sm{animation:bgmove 40s ease-in-out infinite}
   .eq i{animation:eq 1s ease-in-out infinite}
   .eq i:nth-child(2){animation-delay:.2s}
   .eq i:nth-child(3){animation-delay:.45s}
@@ -210,12 +212,12 @@ body.sm{background:linear-gradient(135deg,var(--bg),var(--panel) 50%,var(--bg));
   #guest > div > :nth-child(8){animation-delay:0.40s}
   #guest > div > :nth-child(9){animation-delay:0.45s}
   #guest > div > :nth-child(10){animation-delay:0.50s}
-  h1 span{animation:wob 5s ease-in-out infinite}
+  h1 span{animation:wob 9s ease-in-out infinite}
   .chips .em{transition:transform .12s}
-  .chips .em:hover{transform:translateY(-3px) scale(1.12)}
-  .chips .em:active{transform:scale(1.3)}
+  .chips .em:hover{transform:translateY(-2px) scale(1.06)}
+  .chips .em:active{transform:scale(1.12)}
   button.main{transition:transform .12s,box-shadow .12s}
-  button.main:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  button.main:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.25)}
   button.main:active{transform:scale(.98)}
   li.new{animation:flash 3s ease-out,liin .45s ease-out}
 }
@@ -269,6 +271,7 @@ body.sm{background:linear-gradient(135deg,var(--bg),var(--panel) 50%,var(--bg));
       <div class="menuwrap">
         <button class="ghost" id="menuBtn" aria-haspopup="true" aria-expanded="false">Menü ☰</button>
         <div class="menu hide" id="menu" role="menu">
+          <button role="menuitem" class="openScreen">Beamer-Ansicht öffnen ↗</button>
           <button role="menuitem" id="setBtn">Einstellungen ⚙</button>
           <button role="menuitem" id="statsBtn">Statistik</button>
           <button role="menuitem" id="csv">Excel-Export</button>
@@ -280,12 +283,10 @@ body.sm{background:linear-gradient(135deg,var(--bg),var(--panel) 50%,var(--bg));
     </div>
     <div id="status"></div>
     <div id="pageW">
-      <div class="toprow"><button class="ghost openScreen">Beamer-Ansicht öffnen ↗</button></div>
       <input id="search" type="search" placeholder="Suchen nach Titel, Interpret oder Name" aria-label="Wunschliste durchsuchen" autocomplete="off">
       <ul id="list"></ul>
     </div>
     <div id="pageB" class="hide">
-      <div class="toprow"><button class="ghost openScreen">Beamer-Ansicht öffnen ↗</button></div>
       <h3 class="sub">Läuft jetzt</h3>
       <ul id="bNow"></ul>
       <h3 class="sub">Als Nächstes</h3>
@@ -433,14 +434,14 @@ function buildFx(){
   const box = $("fx"); box.textContent = "";
   const t = THEMES[themeKey];
   if(!t || !t.fx.length || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
-  const big = location.hash === "#screen", n = big ? 18 : 14, r = Math.random;
+  const big = location.hash === "#screen", n = big ? 12 : 9, r = Math.random;
   for(let i = 0; i < n; i++){
     const e = document.createElement("div"); e.className = "fx"; e.textContent = t.fx[i % t.fx.length];
     e.style.animationName = t.mode === "fall" ? "fxfall" : "fxrise";
     e.style.setProperty("--x", (r() * 96) + "%");
-    e.style.setProperty("--s", ((big ? 2.4 : 1.5) + r() * (big ? 3 : 1.8)) + "rem");
-    e.style.setProperty("--d", (10 + r() * 12) + "s");
-    e.style.setProperty("--dl", (-r() * 20) + "s");
+    e.style.setProperty("--s", ((big ? 2 : 1.2) + r() * (big ? 2 : 1.2)) + "rem");
+    e.style.setProperty("--d", (18 + r() * 18) + "s");
+    e.style.setProperty("--dl", (-r() * 30) + "s");
     e.style.setProperty("--dx", (r() * 24 - 12) + "vw");
     e.style.setProperty("--r", (r() * 480 - 240) + "deg");
     box.append(e);
@@ -503,7 +504,7 @@ async function guestEmoji(em){
     const r = await fetch(SUPABASE_URL + "/rest/v1/rpc/send_emoji", {method:"POST", headers: hdr(), body: JSON.stringify({e: em})});
     if(!r.ok) throw 0;
     store.set("lastEmoji", Date.now());
-    m.className = "msg ok"; m.textContent = "Dein Emoji ist unterwegs!"; guestBurst(em, 8);
+    m.className = "msg ok"; m.textContent = "Dein Emoji ist unterwegs!"; guestBurst(em, 4);
   }catch(e){ m.className = "msg err"; m.textContent = "Das hat nicht geklappt. Versuch es gleich noch einmal."; }
 }
 function paintGuestEmojis(){
@@ -517,7 +518,7 @@ function paintGuestEmojis(){
     b.onclick = () => guestEmoji(em); box.append(b);
   });
 }
-function guestBurst(e, n){ const x = e || (THEMES[themeKey] || THEMES.standard).fx[0]; if(x) spawnEmoji(x, n); }
+function guestBurst(e, n){ if(e) spawnEmoji(e, n, true); }
 checkOpen();
 setInterval(() => { if(!["#admin", "#screen"].includes(location.hash) && !document.hidden) checkOpen(); }, 20000);
 $("send").onclick = async () => {
@@ -536,7 +537,7 @@ $("send").onclick = async () => {
     if(!r.ok){ if(!(await checkOpen())) return; throw 0; }
     store.set("lastWish", Date.now());
     $("song").value = $("artist").value = "";
-    m.className = "msg ok"; m.textContent = "Wunsch ist angekommen. Danke!"; guestBurst(null, 10);
+    m.className = "msg ok"; m.textContent = "Wunsch ist angekommen. Danke!";
   }catch(e){ m.className = "msg err"; m.textContent = "Das hat nicht geklappt. Versuch es gleich noch einmal."; }
   $("send").disabled = false;
 };
@@ -883,11 +884,11 @@ function paintScreen(){
   $("scLeft").classList.toggle("hide", !leftHas);
   $("scAside").classList.toggle("hide", !c.qr);
 }
-function spawnEmoji(e, n = 24){
+function spawnEmoji(e, n = 24, small = false){
   if(!e) return;
   const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   for(let i = 0; i < (reduce ? 1 : n); i++){
-    const el = document.createElement("div"); el.className = "emo"; el.textContent = e;
+    const el = document.createElement("div"); el.className = "emo" + (small ? " small" : ""); el.textContent = e;
     el.style.left = (reduce ? 45 : 3 + Math.random() * 90) + "vw";
     if(reduce) el.style.bottom = "40vh";
     el.style.setProperty("--d", (3 + Math.random() * 2.5) + "s");
@@ -983,6 +984,7 @@ async function load(){
   const open = list.filter(g => g.some(x => !x.done)).length;
   $("count").textContent = open + " Lieder offen, " + list.length + " Lieder, " + rows.length + " Wünsche";
   const ul = $("list"); ul.textContent = "";
+  const onScr = new Set(screenRows.map(x => keyOf(x.song, x.artist)));
   const q = norm($("search").value);
   let shown = hideDone ? list.filter(g => g.some(x => !x.done)) : list;
   if(q) shown = shown.filter(g => g.some(x => norm([x.song, x.artist, x.name].join(" ")).includes(q)));
@@ -1003,7 +1005,10 @@ async function load(){
     b1.onclick = async () => { await fetch(base + "?id=in." + ids, {method:"PATCH", headers: hdr(token), body: JSON.stringify({done: !done})}); load(); };
     const b2 = document.createElement("button"); b2.className = "ghost"; b2.textContent = "Löschen";
     b2.onclick = async () => { await fetch(base + "?id=in." + ids, {method:"DELETE", headers: hdr(token)}); load(); };
-    act.append(b1, b2); li.append(info, act); ul.append(li);
+    const bn = document.createElement("button"); bn.className = "nextbtn";
+    if(onScr.has(keyOf(w.song, w.artist))){ bn.textContent = "Schon auf dem Beamer"; bn.disabled = true; }
+    else{ bn.textContent = "Als Nächstes"; bn.onclick = () => bAct(() => addNext(w.song, w.artist)); }
+    act.append(bn, b1, b2); li.append(info, act); ul.append(li);
   });
 }
 route();
